@@ -1,0 +1,37 @@
+name: Оновлення даних
+
+on:
+  schedule:
+    - cron: '30 7 * * *'   # щодня о 07:30 UTC (≈ 09:30–10:30 за Києвом), після ранкового зведення Генштабу
+  workflow_dispatch: {}     # ручний запуск з вкладки Actions
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-data
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run update
+      - name: Закомітити оновлені дані
+        run: |
+          if git diff --quiet -- data/; then
+            echo "Дані не змінилися"
+            exit 0
+          fi
+          git config user.name "peremogium-bot"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          git commit -m "Оновлення даних $(date -u +%Y-%m-%d)"
+          git push

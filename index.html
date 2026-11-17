@@ -1,0 +1,580 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Перемогіум</title>
+<meta name="description" content="Велика картина війни в цифрах: 2025 проти 2026. Офіційні дані та OSINT.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="data/data.js"></script>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #080a0f;
+    --panel: #0e121a;
+    --panel-2: #131824;
+    --border: #1d2433;
+    --border-2: #273044;
+    --text: #e8ecf3;
+    --text-2: #a9b2c3;
+    --muted: #6b7588;
+    --accent: #5ab0ff;
+    --y2025: #3987e5;
+    --y2026: #c98500;
+    --good: #2fbf71;
+    --good-bg: rgba(47,191,113,.12);
+    --bad: #f0616d;
+    --bad-bg: rgba(240,97,109,.12);
+    --warn: #e6a23c;
+    --warn-bg: rgba(230,162,60,.10);
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --r: 14px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background:
+      radial-gradient(1200px 500px at 15% -10%, rgba(57,135,229,.10), transparent 60%),
+      radial-gradient(900px 400px at 100% 0%, rgba(201,133,0,.06), transparent 60%),
+      var(--bg);
+    color: var(--text);
+    font: 15px/1.55 Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 0 24px; }
+  .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+  /* ---------- Header ---------- */
+  header { padding: 36px 0 28px; border-bottom: 1px solid var(--border); display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: end; }
+  .pill { display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; border: 1px solid var(--border-2); border-radius: 999px; font-size: 12px; color: var(--text-2); background: var(--panel); }
+  .pill .upd { color: var(--muted); font-family: var(--mono); }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--good); box-shadow: 0 0 8px var(--good); }
+  h1 { font-size: clamp(26px, 3.4vw, 36px); line-height: 1.2; margin: 14px 0 10px; font-weight: 700; letter-spacing: -.015em; }
+  .sub { color: var(--text-2); max-width: 680px; margin: 0; }
+  .controls { display: flex; flex-direction: column; gap: 10px; align-items: flex-end; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+  .seg { display: inline-flex; padding: 3px; background: var(--panel); border: 1px solid var(--border-2); border-radius: 10px; }
+  .seg button, .btn { font: 500 13px Inter, sans-serif; color: var(--text-2); background: none; border: 0; padding: 7px 13px; border-radius: 7px; cursor: pointer; }
+  .seg button.on { background: var(--panel-2); color: var(--text); box-shadow: inset 0 0 0 1px var(--border-2); }
+  .btn { border: 1px solid var(--border-2); background: var(--panel); border-radius: 10px; display: inline-flex; gap: 8px; align-items: center; }
+  .btn:hover, .seg button:hover { color: var(--text); }
+  .btn .dot { background: var(--muted); box-shadow: none; }
+  .btn.on .dot { background: var(--good); box-shadow: 0 0 8px var(--good); }
+
+  /* ---------- Sections ---------- */
+  section { padding: 34px 0 6px; }
+  .sec-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+  .eyebrow { font: 500 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+  h2 { font-size: 21px; margin: 6px 0 0; font-weight: 650; letter-spacing: -.01em; }
+  .sec-meta { font-size: 12px; color: var(--muted); }
+
+  .panel { background: linear-gradient(180deg, var(--panel-2), var(--panel)); border: 1px solid var(--border); border-radius: var(--r); padding: 18px 20px; }
+
+  /* ---------- KPI ---------- */
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .kpi-top { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; min-height: 34px; }
+  .kpi-label { font: 500 11px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--text-2); }
+  .badge { font: 600 12px var(--mono); padding: 3px 8px; border-radius: 7px; white-space: nowrap; }
+  .badge.good { color: var(--good); background: var(--good-bg); box-shadow: inset 0 0 0 1px rgba(47,191,113,.3); }
+  .badge.bad  { color: var(--bad);  background: var(--bad-bg);  box-shadow: inset 0 0 0 1px rgba(240,97,109,.3); }
+  .kpi-val { font: 600 30px var(--mono); margin: 8px 0 2px; letter-spacing: -.02em; }
+  .kpi-val small { font: 400 13px Inter, sans-serif; color: var(--text-2); margin-left: 6px; letter-spacing: 0; }
+  .split { display: flex; gap: 3px; height: 5px; margin: 12px 0 10px; }
+  .split i { border-radius: 3px; display: block; }
+  .kpi-foot { display: flex; justify-content: space-between; font: 12px var(--mono); color: var(--text-2); }
+  .kpi-foot b { color: var(--text); font-weight: 600; }
+  .lg { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
+  .lg.a { background: var(--y2025); } .lg.b { background: var(--y2026); }
+  .kpi-human { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border-2); font-size: 13px; color: var(--text-2); line-height: 1.45; }
+
+  /* ---------- Charts ---------- */
+  .charts { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+  .charts > *, .kpis > *, .insights > *, .honest > * { min-width: 0; }
+  .ch-title { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 15px; }
+  .ch-title .sq { width: 9px; height: 9px; border-radius: 3px; background: var(--accent); }
+  .ch-sub { font-size: 12px; color: var(--muted); margin: 3px 0 10px; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .chip { font: 12px var(--mono); padding: 3px 8px; border-radius: 6px; background: var(--panel-2); border: 1px solid var(--border-2); color: var(--text-2); }
+  .chip.a { color: #8cbcf3; } .chip.b { color: #e3b14f; }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--text-2); margin-bottom: 6px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend .ln { width: 16px; height: 0; border-top: 2px solid; }
+  .legend .ln.d { border-top-style: dashed; }
+  .legend .bx { width: 10px; height: 10px; border-radius: 3px; }
+  .chart-box { position: relative; height: 300px; }
+  .ch-foot { overflow-wrap: anywhere; margin-top: 10px; font: 12px var(--mono); color: var(--muted); line-height: 1.7; }
+  .explain { margin-top: 12px; padding: 12px 14px; border-radius: 10px; background: rgba(90,176,255,.06); border: 1px solid rgba(90,176,255,.18); font-size: 13.5px; color: var(--text-2); }
+  .explain b { color: var(--text); font-weight: 600; }
+  .explain .lbl { font: 600 11px var(--mono); letter-spacing: .08em; color: var(--accent); text-transform: uppercase; display: block; margin-bottom: 4px; }
+
+  /* ---------- Insights ---------- */
+  .insights { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .ins-head { display: flex; align-items: center; gap: 10px; font-weight: 600; margin-bottom: 12px; }
+  .num { font: 600 11px var(--mono); padding: 3px 7px; border-radius: 6px; }
+  .num.c1 { color: #e3b14f; background: rgba(201,133,0,.15); }
+  .num.c2 { color: var(--good); background: var(--good-bg); }
+  .num.c3 { color: var(--bad); background: var(--bad-bg); }
+  .num.c4 { color: var(--accent); background: rgba(90,176,255,.12); }
+  .kv { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--text-2); }
+  .kv:last-of-type { border-bottom: 0; }
+  .kv b { font: 600 13px var(--mono); color: var(--text); white-space: nowrap; }
+  .kv b.g { color: var(--good); } .kv b.r { color: var(--bad); } .kv b.a { color: #8cbcf3; } .kv b.o { color: #e3b14f; }
+  .callout { margin-top: 12px; padding: 10px 12px; border-radius: 9px; font-size: 13px; line-height: 1.45; display: flex; gap: 8px; }
+  .callout::before { content: "→"; font-family: var(--mono); }
+  .callout.c1 { background: rgba(201,133,0,.08); border: 1px solid rgba(201,133,0,.25); color: #e9cf9a; }
+  .callout.c2 { background: var(--good-bg); border: 1px solid rgba(47,191,113,.25); color: #a6e3c2; }
+  .callout.c3 { background: var(--bad-bg); border: 1px solid rgba(240,97,109,.25); color: #f4b8bd; }
+  .callout.c4 { background: rgba(90,176,255,.07); border: 1px solid rgba(90,176,255,.22); color: #b7d8fb; }
+
+  /* ---------- Honest ---------- */
+  .honest { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .honest .panel { border-color: rgba(230,162,60,.25); }
+  .h-tag { font: 600 11px var(--mono); letter-spacing: .08em; color: var(--warn); text-transform: uppercase; }
+  .honest h3 { font-size: 15px; margin: 8px 0 6px; }
+  .honest p { margin: 0; font-size: 13px; color: var(--text-2); }
+  .honest .fig { font: 600 20px var(--mono); color: var(--text); margin: 10px 0 0; }
+
+  /* ---------- Table ---------- */
+  .tbl-scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { font: 500 11px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); text-align: right; padding: 10px 12px; border-bottom: 1px solid var(--border-2); white-space: nowrap; }
+  td { padding: 11px 12px; text-align: right; border-bottom: 1px solid var(--border); font-family: var(--mono); white-space: nowrap; color: var(--text-2); }
+  th:first-child, td:first-child { text-align: left; font-family: Inter, sans-serif; }
+  td:first-child { color: var(--text); font-weight: 500; }
+  td .d { font-size: 11px; color: var(--muted); margin-left: 4px; }
+  td.g { color: var(--good); } td.r { color: var(--bad); } td.a { color: #8cbcf3; } td.o { color: #e3b14f; }
+  tr.hl td { background: rgba(255,255,255,.02); }
+  details { margin-top: 14px; }
+  summary { cursor: pointer; display: inline-flex; gap: 8px; font-size: 13px; color: var(--text-2); padding: 8px 12px; border: 1px solid var(--border-2); border-radius: 9px; list-style: none; }
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: "▸"; }
+  details[open] summary::before { content: "▾"; }
+
+  .sources ol { margin: 0; padding-left: 20px; color: var(--text-2); font-size: 13px; }
+  .sources li { margin: 7px 0; }
+  .sources a { color: #8cbcf3; text-decoration: none; border-bottom: 1px solid rgba(140,188,243,.3); }
+  footer { padding: 30px 0 50px; color: var(--muted); font: 12px var(--mono); border-top: 1px solid var(--border); margin-top: 34px; }
+  .err { margin: 40px 0; padding: 20px; border: 1px solid var(--bad); border-radius: var(--r); color: var(--bad); }
+
+  @media (max-width: 1050px) {
+    .kpis, .insights, .honest { grid-template-columns: 1fr 1fr; }
+    .charts { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 680px) {
+    .wrap { padding: 0 16px; }
+    header { grid-template-columns: 1fr; }
+    .controls { align-items: flex-start; }
+    .row { justify-content: flex-start; }
+    .kpis, .insights, .honest { grid-template-columns: 1fr; }
+    .chart-box { height: 260px; }
+    .kpi-val { font-size: 26px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div>
+    <span class="pill"><span class="dot"></span>Перемогіум · 2025 vs 2026 <span class="upd" id="updated"></span></span>
+    <h1>Велика картина: територія, втрати рф і гроші на війну</h1>
+    <p class="sub">Окрема новина — це один день. Тут — тренд за рік. Порівнюємо однакові місяці 2025 і 2026 років на даних Генштабу ЗСУ, DeepState та Мінфіну рф. Погані цифри теж показуємо.</p>
+  </div>
+  <div class="controls">
+    <div class="row">
+      <div class="seg" id="yearSeg">
+        <button class="on" data-y="both">Обидва роки</button>
+        <button data-y="2025">2025</button>
+        <button data-y="2026">2026</button>
+      </div>
+      <button class="btn on" id="trendBtn"><span class="dot"></span><span>Тренди: увімк.</span></button>
+    </div>
+    <button class="btn" id="replayBtn">↻ Відтворити анімацію</button>
+  </div>
+</header>
+
+<!-- 01 KPI -->
+<section>
+  <div class="sec-head">
+    <div><div class="eyebrow">Секція 01 • Головне</div><h2>Чотири цифри, які варто пам'ятати</h2></div>
+    <div class="sec-meta mono" id="kpiMeta"></div>
+  </div>
+  <div class="kpis" id="kpis"></div>
+</section>
+
+<!-- 02 Charts -->
+<section>
+  <div class="sec-head">
+    <div><div class="eyebrow">Секція 02 • Помісячна динаміка</div><h2>Як змінювалося кожного місяця</h2></div>
+    <div class="sec-meta">Наведіть на місяць — підсвітиться на обох графіках</div>
+  </div>
+  <div class="charts">
+    <div class="panel">
+      <div class="ch-title"><span class="sq" style="background:var(--y2026)"></span>Графік А: Скільки землі захоплює росія за добу</div>
+      <div class="ch-sub">Середня площа за добу в кожному місяці, км² (карта DeepState)</div>
+      <div class="chips" id="chipsA"></div>
+      <div class="legend" id="legA"></div>
+      <div class="chart-box"><canvas id="chA"></canvas></div>
+      <div class="ch-foot" id="footA"></div>
+      <div class="explain" id="explainA"></div>
+    </div>
+    <div class="panel">
+      <div class="ch-title"><span class="sq" style="background:var(--y2025)"></span>Графік Б: Скільки військових втрачає росія</div>
+      <div class="ch-sub">Убиті та поранені за місяць, осіб (Генштаб ЗСУ)</div>
+      <div class="chips" id="chipsB"></div>
+      <div class="legend" id="legB"></div>
+      <div class="chart-box"><canvas id="chB"></canvas></div>
+      <div class="ch-foot" id="footB"></div>
+      <div class="explain" id="explainB"></div>
+    </div>
+  </div>
+</section>
+
+<!-- 03 Insights -->
+<section>
+  <div class="sec-head">
+    <div><div class="eyebrow">Секція 03 • Висновки</div><h2>Що з цього випливає</h2></div>
+    <div class="sec-meta">Факти — зверху, висновок людською мовою — внизу картки</div>
+  </div>
+  <div class="insights" id="insights"></div>
+</section>
+
+<!-- 04 Honest -->
+<section>
+  <div class="sec-head">
+    <div><div class="eyebrow" style="color:var(--warn)">Секція 04 • Чесно</div><h2>Що не так добре</h2></div>
+    <div class="sec-meta">Картина без цього була б неповною</div>
+  </div>
+  <div class="honest" id="honest"></div>
+</section>
+
+<!-- 05 Table -->
+<section>
+  <div class="sec-head">
+    <div><div class="eyebrow">Секція 05 • Таблиці</div><h2>Усі цифри</h2></div>
+    <div class="sec-meta">Одиниці: км², км²/добу, осіб</div>
+  </div>
+  <div class="panel">
+    <div class="tbl-scroll"><table id="statTbl"></table></div>
+    <details>
+      <summary id="monthSummary">Показати помісячну таблицю</summary>
+      <div class="tbl-scroll"><table id="monthTbl"></table></div>
+    </details>
+  </div>
+</section>
+
+<!-- 06 Sources -->
+<section class="sources">
+  <div class="sec-head">
+    <div><div class="eyebrow">Секція 06 • Джерела та методика</div><h2>Звідки цифри</h2></div>
+  </div>
+  <div class="panel"><ol id="sources"></ol></div>
+</section>
+
+<footer id="footer"></footer>
+</div>
+
+<script>
+(() => {
+const D = window.PEREMOGIUM_DATA;
+if (!D) {
+  document.querySelector('.wrap').insertAdjacentHTML('afterbegin', '<div class="err">Не вдалося завантажити дані (data/data.js). Запустіть <code>npm run update</code>.</div>');
+  return;
+}
+
+// ================= DATA =================
+const MS = ['Січ','Лют','Бер','Кві','Тра','Чер','Лип','Сер','Вер','Жов','Лис','Гру'];
+const MFA = ['січень','лютий','березень','квітень','травень','червень','липень','серпень','вересень','жовтень','листопад','грудень'];
+const MGEN = ['січня','лютого','березня','квітня','травня','червня','липня','серпня','вересня','жовтня','листопада','грудня'];
+const DAYS_ALL = [31,28,31,30,31,30,31,31,30,31,30,31]; // 2025 і 2026 — не високосні
+
+// Порівнюємо лише повні місяці, які є для обох джерел і обох років.
+const N = Math.min(D.territory.monthly[2026].length, D.personnel.monthly[2026].length);
+const M = MS.slice(0, N), MF = MFA.slice(0, N), DAYS = DAYS_ALL.slice(0, N);
+const terr = { 2025: D.territory.monthly[2025].slice(0, N), 2026: D.territory.monthly[2026].slice(0, N) };
+const pers = { 2025: D.personnel.monthly[2025].slice(0, N), 2026: D.personnel.monthly[2026].slice(0, N) };
+const PERIOD = `січ–${MS[N - 1].toLowerCase()}`;
+const oil = D.oilGas, oil26 = oil.value2026, oil25 = oil26 / (1 + oil.changePct / 100);
+
+// ================= HELPERS =================
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const C25 = css('--y2025'), C26 = css('--y2026');
+const sp = n => Math.round(n).toLocaleString('en-US').replace(/,/g, ' ');
+const dec = (n, d = 1) => n.toFixed(d).replace('.', ',');
+const cap = s => s[0].toUpperCase() + s.slice(1);
+const sum = a => a.reduce((s, x) => s + (x ?? 0), 0);
+const median = a => { const s = [...a].sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+const dateUA = iso => { const d = new Date(iso); return `${d.getDate()} ${MGEN[d.getMonth()]} ${d.getFullYear()}`; };
+const pct = (a, b) => (b / a - 1) * 100;
+const sgn = (n, d = 2) => (n >= 0 ? '+' : '−') + dec(Math.abs(n), d);
+const plural = (n, [one, few, many]) => { n = Math.abs(Math.round(n)) % 100; const d = n % 10; return n > 10 && n < 20 ? many : d === 1 ? one : d >= 2 && d <= 4 ? few : many; };
+const sgnInt = n => (n >= 0 ? '+' : '−') + sp(Math.abs(n));
+function regress(a) {
+  const n = a.length, mx = (n - 1) / 2, my = sum(a) / n;
+  let num = 0, den = 0;
+  a.forEach((y, x) => { num += (x - mx) * (y - my); den += (x - mx) ** 2; });
+  const k = num / den, b = my - k * mx;
+  return { k, line: a.map((_, x) => +(b + k * x).toFixed(2)) };
+}
+
+// ================= DERIVED =================
+const days = sum(DAYS);
+const t25 = sum(terr[2025]), t26 = sum(terr[2026]);
+const r25 = t25 / days, r26 = t26 / days;
+const p25 = sum(pers[2025]), p26 = sum(pers[2026]);
+const price25 = p25 / t25, price26 = p26 / t26;
+const pd = y => terr[y].map((v, i) => +(v / DAYS[i]).toFixed(2));
+const pd25 = pd(2025), pd26 = pd(2026);
+const regA25 = regress(pd25), regA26 = regress(pd26);
+const regB25 = regress(pers[2025]), regB26 = regress(pers[2026]);
+const argmax = a => a.indexOf(Math.max(...a)), argmin = a => a.indexOf(Math.min(...a));
+
+// ================= HEADER / META =================
+document.getElementById('updated').textContent = '· оновлено ' + dateUA(D.generatedAt);
+document.getElementById('kpiMeta').textContent = `${cap(PERIOD)} · ${N} міс. (${days} ${plural(days, ['день', 'дні', 'днів'])}) · однакові місяці обох років`;
+
+// ================= KPI =================
+function kpi({ label, badge, good, val, unit, a, b, fa, fb, human }) {
+  const tot = a + b;
+  return `<div class="panel">
+    <div class="kpi-top"><div class="kpi-label">${label}</div><span class="badge ${good ? 'good' : 'bad'}">${badge}</span></div>
+    <div class="kpi-val">${val}<small>${unit}</small></div>
+    <div class="split"><i style="background:${C25};width:${a / tot * 100}%"></i><i style="background:${C26};width:${b / tot * 100}%"></i></div>
+    <div class="kpi-foot"><span><i class="lg a"></i>2025: <b>${fa}</b></span><span><i class="lg b"></i>2026: <b>${fb}</b></span></div>
+    <div class="kpi-human">${human}</div>
+  </div>`;
+}
+const terrLess = t26 < t25, persMore = p26 >= p25, priceUp = price26 >= price25;
+document.getElementById('kpis').innerHTML = [
+  kpi({ label: 'Захоплена територія · разом', badge: (t26 >= t25 ? '+' : '') + dec(pct(t25, t26)) + '%', good: terrLess,
+        val: sp(t26), unit: 'км²', a: t25, b: t26, fa: sp(t25), fb: sp(t26),
+        human: terrLess
+          ? `За ${N} місяців 2026-го росія захопила <b>у ${dec(t25 / t26)} раза менше</b> землі, ніж за ті самі місяці 2025-го.`
+          : `За ${N} місяців 2026-го росія захопила <b>більше</b> землі, ніж за ті самі місяці 2025-го.` }),
+  kpi({ label: 'Темп захоплення · на добу', badge: terrLess ? '÷' + dec(r25 / r26, 2) : '×' + dec(r26 / r25, 2), good: terrLess,
+        val: dec(r26, 2), unit: 'км²/добу', a: r25, b: r26, fa: dec(r25, 2), fb: dec(r26, 2),
+        human: `${dec(r26, 1)} км² на добу — це приблизно <b>${sp(r26 * 140)} ${plural(r26 * 140, ['футбольне поле', 'футбольні поля', 'футбольних полів'])}</b>. Торік було ${sp(r25 * 140)}.` }),
+  kpi({ label: 'Втрати рф · особовий склад', badge: (persMore ? '+' : '') + dec(pct(p25, p26)) + '%', good: true,
+        val: sp(p26), unit: 'осіб', a: p25, b: p26, fa: sp(p25), fb: sp(p26),
+        human: `Убиті та поранені за ${N} місяців. ` + (persMore
+          ? `Росія воює з <b>такою самою або більшою</b> інтенсивністю — а результат ${terrLess ? 'менший' : 'не кращий'}.`
+          : `Росія втрачає <b>менше</b> людей, ніж торік.`) }),
+  kpi({ label: 'Ціна 1 км² · для рф', badge: (priceUp ? '×' + dec(price26 / price25) : '÷' + dec(price25 / price26)), good: priceUp,
+        val: sp(price26), unit: 'осіб/км²', a: price25, b: price26, fa: sp(price25), fb: sp(price26),
+        human: `Скільки військових рф втрачає на кожен захоплений км². ` + (priceUp
+          ? `Земля коштує їй <b>у ${dec(price26 / price25)} раза дорожче</b>.`
+          : `Земля дістається їй <b>дешевше</b>, ніж торік.`) }),
+].join('');
+
+// ================= CHARTS =================
+Chart.defaults.color = css('--muted');
+Chart.defaults.font.family = 'JetBrains Mono, ui-monospace, monospace';
+Chart.defaults.font.size = 11;
+const gridC = 'rgba(255,255,255,.05)';
+const tip = {
+  backgroundColor: '#0b0f17', borderColor: '#273044', borderWidth: 1, padding: 10, cornerRadius: 8,
+  titleColor: '#e8ecf3', bodyColor: '#a9b2c3', titleFont: { family: 'Inter', weight: '600', size: 12 },
+  bodyFont: { family: 'JetBrains Mono', size: 12 }, boxPadding: 4, usePointStyle: true,
+  filter: i => !i.dataset.isTrend,
+};
+const fade = (hex, a) => hex + Math.round(a * 255).toString(16).padStart(2, '0');
+const areaFill = color => ctx => {
+  const { chart } = ctx, { ctx: c, chartArea } = chart;
+  if (!chartArea) return 'transparent';
+  const g = c.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+  g.addColorStop(0, fade(color, .28)); g.addColorStop(1, fade(color, 0));
+  return g;
+};
+const trendDs = (label, data, color, year) => ({
+  label, data, isTrend: true, year, type: 'line', borderColor: fade(color, .85), borderWidth: 1.5,
+  borderDash: [5, 4], pointRadius: 0, pointHoverRadius: 0, fill: false, tension: 0, order: 0,
+});
+const lineDs = (y, data, color) => ({
+  label: String(y), year: String(y), data, borderColor: color, backgroundColor: areaFill(color), fill: true,
+  borderWidth: 2.2, tension: .35, pointRadius: 3.5, pointBackgroundColor: '#0e121a', pointBorderColor: color,
+  pointBorderWidth: 2, pointHoverRadius: 6, order: 1,
+});
+const barDs = (y, data, color) => ({
+  label: String(y), year: String(y), data, backgroundColor: fade(color, .85), hoverBackgroundColor: color,
+  borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: 'bottom', categoryPercentage: .72, barPercentage: .88, order: 1,
+});
+const title = it => cap(MF[it[0].dataIndex]);
+const baseOpts = (tipCb, yTicks) => ({
+  maintainAspectRatio: false,
+  interaction: { mode: 'index', intersect: false },
+  plugins: { legend: { display: false }, tooltip: { ...tip, callbacks: { title, label: tipCb } } },
+  scales: {
+    x: { grid: { display: false }, border: { color: '#273044' } },
+    y: { grid: { color: gridC }, border: { display: false }, beginAtZero: true, ticks: { maxTicksLimit: 6, ...yTicks } },
+  },
+});
+
+const chA = new Chart(document.getElementById('chA'), {
+  type: 'line',
+  data: { labels: M, datasets: [lineDs(2025, pd25, C25), lineDs(2026, pd26, C26),
+    trendDs('Тренд 2025', regA25.line, C25, '2025'), trendDs('Тренд 2026', regA26.line, C26, '2026')] },
+  options: baseOpts(c => ` ${c.dataset.label}: ${dec(c.raw, 2)} км²/добу · ${sp(terr[c.dataset.label][c.dataIndex])} км² за місяць`, {}),
+});
+const chB = new Chart(document.getElementById('chB'), {
+  type: 'bar',
+  data: { labels: M, datasets: [barDs(2025, pers[2025], C25), barDs(2026, pers[2026], C26),
+    trendDs('Тренд 2025', regB25.line, C25, '2025'), trendDs('Тренд 2026', regB26.line, C26, '2026')] },
+  options: baseOpts(c => ` ${c.dataset.label}: ${sp(c.raw)} осіб`, { callback: v => v / 1000 + 'k' }),
+});
+
+// chips, legends, footers, explanations
+document.getElementById('chipsA').innerHTML =
+  `<span class="chip a">2025: ${sgn(regA25.k)} км²/добу щомісяця</span><span class="chip b">2026: ${sgn(regA26.k)} км²/добу щомісяця</span>`;
+document.getElementById('chipsB').innerHTML =
+  `<span class="chip a">2025: ${sgnInt(regB25.k)} осіб/міс</span><span class="chip b">2026: ${sgnInt(regB26.k)} осіб/міс</span>`;
+const leg = shape => `
+  <span><i class="${shape}" style="${shape === 'bx' ? 'background' : 'border-color'}:${C25}"></i>Факт 2025</span>
+  <span class="tr"><i class="ln d" style="border-color:${C25}"></i>Тренд 2025</span>
+  <span><i class="${shape}" style="${shape === 'bx' ? 'background' : 'border-color'}:${C26}"></i>Факт 2026</span>
+  <span class="tr"><i class="ln d" style="border-color:${C26}"></i>Тренд 2026</span>`;
+document.getElementById('legA').innerHTML = leg('ln');
+document.getElementById('legB').innerHTML = leg('bx');
+
+const tp = D.territory.partial[2026], pp = D.personnel.partial[2026];
+const minA = argmin(pd26), maxA25 = argmax(pd25), maxA26 = argmax(pd26);
+document.getElementById('footA').innerHTML =
+  `Мін. 2026: ${MF[minA]} (${dec(pd26[minA], 2)} км²/добу)` +
+  (tp ? `<br>${cap(MFA[tp.month - 1])} 2026 ще триває: ${sp(tp.value)} км² станом на ${dateUA(tp.asOf)}` : '');
+const maxB = argmax(pers[2026]);
+const allTimeRecord = Math.max(...pers[2026]) >= Math.max(...pers[2025]);
+document.getElementById('footB').innerHTML =
+  `Пік 2026: ${MF[maxB]} (${sp(pers[2026][maxB])} осіб)${allTimeRecord ? ' — більше, ніж будь-коли у 2025-му' : ''}` +
+  (pp ? `<br>${cap(MFA[pp.month - 1])} 2026 ще триває: ${sp(pp.value)} осіб станом на ${dateUA(pp.asOf)}` : '');
+
+const dir = k => k >= 0 ? '<b>дедалі більше</b> (тренд іде вгору)' : '<b>дедалі менше</b> (тренд іде вниз)';
+document.getElementById('explainA').innerHTML = `<span class="lbl">Людською мовою</span>
+  У 2025-му росія з кожним місяцем захоплювала ${dir(regA25.k)}. У 2026-му — ${dir(regA26.k)}.
+  Найшвидше 2025-го: ${MF[maxA25]}, ${dec(pd25[maxA25])} км² на добу. Найшвидше 2026-го: ${MF[maxA26]}, ${dec(pd26[maxA26])} км² на добу.`;
+document.getElementById('explainB').innerHTML = `<span class="lbl">Людською мовою</span>` + (regB26.k > 0
+  ? `Втрати рф у 2026-му <b>ростуть</b>. Разом із графіком А це означає: росія штурмує ${persMore ? 'сильніше, ніж торік' : 'так само'}, але просувається ${terrLess ? '<b>значно повільніше</b>' : 'не швидше'}.`
+  : `Втрати рф у 2026-му <b>знижуються</b>. Порівнюйте з графіком А: важливо, скільки землі росія отримує за ці втрати.`);
+
+// synced hover
+function syncHover(src, dst) {
+  src.canvas.addEventListener('mousemove', e => {
+    const pts = src.getElementsAtEventForMode(e, 'index', { intersect: false }, false);
+    if (!pts.length) return;
+    const i = pts[0].index;
+    const act = dst.data.datasets.map((d, di) => ({ d, di }))
+      .filter(o => !o.d.isTrend && !dst.getDatasetMeta(o.di).hidden && o.d.data[i] != null)
+      .map(o => ({ datasetIndex: o.di, index: i }));
+    dst.setActiveElements(act); dst.tooltip.setActiveElements(act, { x: 0, y: 0 }); dst.update('none');
+  });
+  src.canvas.addEventListener('mouseleave', () => { dst.setActiveElements([]); dst.tooltip.setActiveElements([], { x: 0, y: 0 }); dst.update('none'); });
+}
+syncHover(chA, chB); syncHover(chB, chA);
+
+// controls
+let yearMode = 'both', trendsOn = true;
+function applyVis() {
+  for (const ch of [chA, chB]) {
+    ch.data.datasets.forEach((d, i) => {
+      const yearOk = yearMode === 'both' || d.year === yearMode;
+      ch.getDatasetMeta(i).hidden = !(yearOk && (!d.isTrend || trendsOn));
+    });
+    ch.update();
+  }
+  document.querySelectorAll('.legend span').forEach(s => {
+    const y = s.textContent.includes('2025') ? '2025' : '2026';
+    s.style.opacity = (yearMode === 'both' || yearMode === y) && (!s.classList.contains('tr') || trendsOn) ? 1 : .3;
+  });
+}
+document.querySelectorAll('#yearSeg button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('#yearSeg button').forEach(x => x.classList.toggle('on', x === b));
+  yearMode = b.dataset.y; applyVis();
+}));
+document.getElementById('trendBtn').addEventListener('click', e => {
+  trendsOn = !trendsOn;
+  e.currentTarget.classList.toggle('on', trendsOn);
+  e.currentTarget.lastElementChild.textContent = 'Тренди: ' + (trendsOn ? 'увімк.' : 'вимк.');
+  applyVis();
+});
+document.getElementById('replayBtn').addEventListener('click', () => { for (const ch of [chA, chB]) { ch.reset(); ch.update(); } });
+
+// ================= INSIGHTS =================
+const ins = (n, ttl, rows, call) => `<div class="panel">
+  <div class="ins-head"><span class="num c${n}">0${n}</span>${ttl}</div>
+  ${rows.map(([k, v, c]) => `<div class="kv"><span>${k}</span><b class="${c || ''}">${v}</b></div>`).join('')}
+  <div class="callout c${n}">${call}</div></div>`;
+// Найкращі 3 місяці поспіль для росії у 2025-му vs ті самі місяці 2026-го
+let w = 0; for (let i = 1; i + 2 < N; i++) if (sum(terr[2025].slice(i, i + 3)) > sum(terr[2025].slice(w, w + 3))) w = i;
+const win25 = sum(terr[2025].slice(w, w + 3)), win26 = sum(terr[2026].slice(w, w + 3));
+const winLbl = `${MS[w].toLowerCase()}–${MS[w + 2].toLowerCase()}`;
+const L2 = `${MS[N - 2].toLowerCase()}–${MS[N - 1].toLowerCase()}`;
+const last25 = pers[2025][N - 2] + pers[2025][N - 1], last26 = pers[2026][N - 2] + pers[2026][N - 1];
+document.getElementById('insights').innerHTML = [
+  ins(1, terrLess ? 'Наступ гальмує' : 'Наступ не гальмує', [
+    ['Тренд 2025', sgn(regA25.k) + ' км²/добу', 'a'],
+    ['Тренд 2026', sgn(regA26.k) + ' км²/добу', 'o'],
+    [cap(winLbl), `${sp(win25)} → ${sp(win26)} км²`],
+  ], `У найгарячіші для росії місяці 2025-го (${winLbl}) вона захопила ${sp(win25)} км². За ті самі місяці 2026-го — ${sp(win26)} км², на ${Math.round(Math.abs(pct(win25, win26)))}% ${win26 < win25 ? 'менше' : 'більше'}.`),
+  ins(2, last26 > last25 ? 'Штурмів більше, не менше' : 'Інтенсивність штурмів', [
+    ['Пік втрат 2026', `${sp(pers[2026][maxB])} (${MF[maxB]})`, 'r'],
+    [cap(L2), `${sp(last25)} → ${sp(last26)}`],
+    ['Тренд 2026', sgnInt(regB26.k) + ' осіб/міс', 'o'],
+  ], last26 > last25
+    ? `За останні два місяці рф втратила на ${Math.round(pct(last25, last26))}% більше людей, ніж торік. Тиск не слабшає — він розбивається об оборону.`
+    : `За останні два місяці рф втратила на ${Math.round(-pct(last25, last26))}% менше людей, ніж торік.`),
+  ins(3, priceUp ? '«Ціна» 1 км² зросла' : '«Ціна» 1 км² знизилася', [
+    ['2025', sp(price25) + ' осіб/км²', 'a'],
+    ['2026', sp(price26) + ' осіб/км²', 'o'],
+    ['Зміна', priceUp ? '×' + dec(price26 / price25) : '÷' + dec(price25 / price26), priceUp ? 'r' : ''],
+  ], priceUp
+    ? `Той самий квадратний кілометр коштує росії у ${dec(price26 / price25)} раза більше життів.`
+    : `Квадратний кілометр дістається росії дешевше, ніж торік.`),
+  ins(4, 'Менше грошей на війну', [
+    ['Нафтогаз 2025', '≈' + dec(oil25, 2) + ' трлн ₽', 'a'],
+    ['Нафтогаз 2026', dec(oil26, 2) + ' трлн ₽', 'o'],
+    ['План на рік', `${dec(oil.planOld, 2)} → ${dec(oil.planNew, 2)} трлн ₽`, 'g'],
+  ], `Головне джерело грошей рф за ${oil.period} дало на ${Math.abs(oil.changePct)}% менше, і Мінфін рф сам урізав план.`),
+].join('');
+
+// ================= HONEST =================
+const h = (tag, ttl, fig, text) => `<div class="panel"><div class="h-tag">⚠ ${tag}</div><h3>${ttl}</h3><p>${text}</p><div class="fig">${fig}</div></div>`;
+document.getElementById('honest').innerHTML = [
+  h('Територія', 'росія все одно просувається', sp(t26) + ' км²',
+    `Повільніше, ніж торік, але за ${N} місяців 2026-го це ${t26 > 839 ? 'більше, ніж уся площа Києва (839 км²)' : `${Math.round(t26 / 839 * 100)}% площі Києва`}.`),
+  h('Інтенсивність', 'Штурми посилюються', sp(pers[2026][maxB]) + ' / міс',
+    `Рекордні втрати рф означають і рекордний тиск на наших військових. Фронт тримається ціною величезних зусиль.`),
+  h('Економіка рф', 'Нафта подорожчала', 'Urals > $100', oil.lastMonthNote),
+  h('Дані', 'Свіжі місяці можуть зрости', '105 → 341 км²',
+    `Ми рахуємо за картою DeepState на 1-ше число. Частину просувань DeepState позначає із запізненням: за липень–вересень 2026-го спершу було 105 км², після уточнення — 341.`),
+].join('');
+
+// ================= TABLES =================
+const st = a => { const mn = Math.min(...a), mx = Math.max(...a); return { sum: sum(a), avg: sum(a) / a.length, med: median(a), mn, mnI: a.indexOf(mn), mx, mxI: a.indexOf(mx) }; };
+const sT25 = st(terr[2025]), sT26 = st(terr[2026]), sP25 = st(pers[2025]), sP26 = st(pers[2026]);
+const ms = i => MS[i].toLowerCase();
+document.getElementById('statTbl').innerHTML = `
+  <tr><th>Показник і рік</th><th>Разом</th><th>У середньому</th><th>Медіана</th><th>Мінімум</th><th>Максимум</th><th>Тренд / міс.</th></tr>
+  <tr><td><i class="lg a"></i>Територія — 2025 <span class="d">${PERIOD}</span></td><td>${sp(sT25.sum)} км²</td><td class="a">${dec(r25, 2)} км²/добу</td><td>${sp(sT25.med)} км²/міс</td><td>${sp(sT25.mn)} <span class="d">${ms(sT25.mnI)}</span></td><td>${sp(sT25.mx)} <span class="d">${ms(sT25.mxI)}</span></td><td class="${regA25.k > 0 ? 'r' : 'g'}">${sgn(regA25.k)} км²/д</td></tr>
+  <tr class="hl"><td><i class="lg b"></i>Територія — 2026 <span class="d">${PERIOD}</span></td><td>${sp(sT26.sum)} км² <span class="d">(${dec(pct(t25, t26))}%)</span></td><td class="o">${dec(r26, 2)} км²/добу</td><td>${sp(sT26.med)} км²/міс</td><td class="g">${sp(sT26.mn)} <span class="d">${ms(sT26.mnI)}</span></td><td>${sp(sT26.mx)} <span class="d">${ms(sT26.mxI)}</span></td><td class="${regA26.k > 0 ? 'r' : 'g'}">${sgn(regA26.k)} км²/д</td></tr>
+  <tr><td><i class="lg a"></i>Втрати рф — 2025 <span class="d">${PERIOD}</span></td><td>${sp(sP25.sum)} осіб</td><td class="a">${sp(sP25.avg)} /міс</td><td>${sp(sP25.med)} /міс</td><td>${sp(sP25.mn)} <span class="d">${ms(sP25.mnI)}</span></td><td>${sp(sP25.mx)} <span class="d">${ms(sP25.mxI)}</span></td><td>${sgnInt(regB25.k)} осіб</td></tr>
+  <tr class="hl"><td><i class="lg b"></i>Втрати рф — 2026 <span class="d">${PERIOD}</span></td><td>${sp(sP26.sum)} осіб <span class="d">(${persMore ? '+' : ''}${dec(pct(p25, p26))}%)</span></td><td class="o">${sp(sP26.avg)} /міс</td><td>${sp(sP26.med)} /міс</td><td>${sp(sP26.mn)} <span class="d">${ms(sP26.mnI)}</span></td><td class="r">${sp(sP26.mx)} <span class="d">${ms(sP26.mxI)}</span></td><td class="o">${sgnInt(regB26.k)} осіб</td></tr>`;
+
+document.getElementById('monthSummary').textContent = `Показати помісячну таблицю (${MFA[0]}–${MFA[N - 1]})`;
+let mt = `<tr><th>Місяць</th><th>Територія 2025</th><th>Територія 2026</th><th>км²/добу 2025</th><th>км²/добу 2026</th><th>Втрати рф 2025</th><th>Втрати рф 2026</th></tr>`;
+for (let i = 0; i < N; i++) {
+  mt += `<tr><td>${cap(MF[i])}</td><td>${dec(terr[2025][i])} км²</td><td>${dec(terr[2026][i])} км²</td><td>${dec(pd25[i], 2)}</td><td>${dec(pd26[i], 2)}</td><td>${sp(pers[2025][i])}</td><td>${sp(pers[2026][i])}</td></tr>`;
+}
+document.getElementById('monthTbl').innerHTML = mt;
+
+// ================= SOURCES =================
+document.getElementById('sources').innerHTML = `
+  <li><b>Втрати рф</b> — щоденні зведення <a href="https://www.facebook.com/GeneralStaff.ua" target="_blank" rel="noopener">Генштабу ЗСУ</a>, машиночитний архів <a href="https://russianwarship.rip/" target="_blank" rel="noopener">russianwarship.rip</a>. Дані станом на ${dateUA(D.personnel.asOf)}. Місяць = накопичений підсумок на 1-ше число наступного місяця мінус підсумок на 1-ше число цього. Це оцінка української сторони; методика однакова для обох років.</li>
+  <li><b>Територія</b> — карта <a href="https://deepstatemap.live/" target="_blank" rel="noopener">DeepState</a>. Беремо знімок карти на 1-ше число кожного місяця й рахуємо площу окупованого (разом із Кримом і ОРДЛО); приріст за місяць — різниця двох знімків. Зараз окуповано ${sp(D.territory.occupiedNow)} км² (станом на ${dateUA(D.territory.asOf)}). Цифри збігаються з першими місячними підсумками DeepState; пізніші уточнення потрапляють у місяць, коли їх нанесли на карту. Детальніше — <a href="https://fakty.com.ua/ua/ukraine/20261008-skilky-terytoriyi-okupuvala-rosiya-u-veresni-2026-roku-statystyka-deepstate/" target="_blank" rel="noopener">про уточнення DeepState</a>.</li>
+  <li><b>Нафтогазові доходи рф</b> — дані Мінфіну рф через ${oil.sources.map(s => `<a href="${s.url}" target="_blank" rel="noopener">${s.title}</a>`).join(' і ')}. Значення 2025 року розраховане з опублікованої зміни (${oil.changePct}%). Оновлюється вручну.</li>`;
+document.getElementById('footer').textContent =
+  `Перемогіум · прототип · дані згенеровано ${dateUA(D.generatedAt)}, ${new Date(D.generatedAt).toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })}`;
+})();
+</script>
+</body>
+</html>

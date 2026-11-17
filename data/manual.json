@@ -1,0 +1,17 @@
+{
+  "_comment": "Дані, які поки не вдається тягнути автоматично. Оновлювати вручну раз на місяць (після публікації Мінфіну рф, зазвичай 3-5 числа).",
+  "oilGas": {
+    "period": "січ–жов",
+    "months": 10,
+    "value2026": 6.44,
+    "changePct": -14,
+    "planOld": 8.92,
+    "planNew": 7.58,
+    "unit": "трлн руб.",
+    "lastMonthNote": "У жовтні 2026 Urals коштувала $101 за барель, і нафтогазові доходи рф за місяць стали найвищими за півтора року.",
+    "sources": [
+      { "title": "УНІАН", "url": "https://www.unian.ua/economics/energetics/dohodi-rosiji-vid-nafti-y-gazu-dosyagli-pivtorarichnogo-rekordu-13552011.html" },
+      { "title": "Цензор.НЕТ", "url": "https://censor.net/biz/news/4032458/naftogazovi-dohody-rf-u-jovtni-zrosly-bilshe-nij-udvichi" }
+    ]
+  }
+}
