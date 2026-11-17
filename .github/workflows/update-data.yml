@@ -10,6 +10,7 @@ on:
       - 'index.html'
       - 'data/data.js'
       - 'data/data.json'
+      - 'assets/**'
       - '.github/workflows/update-data.yml'
 
 permissions:
@@ -54,6 +55,7 @@ jobs:
         run: |
           mkdir -p dist/data
           cp data/data.js data/data.json dist/data/
+          cp -r assets dist/
           # Мітка версії, щоб браузери не показували вчорашні цифри з кешу
           sed "s#data/data.js\"#data/data.js?v=$(date -u +%Y%m%d%H%M)\"#" index.html > dist/index.html
           find dist -type f
