@@ -1,30 +1,43 @@
-name: Оновлення даних
+name: Оновлення даних і публікація
 
 on:
   schedule:
     - cron: '30 7 * * *'   # щодня о 07:30 UTC (≈ 09:30–10:30 за Києвом), після ранкового зведення Генштабу
   workflow_dispatch: {}     # ручний запуск з вкладки Actions
+  push:
+    branches: [main]
+    paths:                  # зміни дизайну чи даних одразу йдуть на сайт
+      - 'index.html'
+      - 'data/data.js'
+      - 'data/data.json'
+      - '.github/workflows/update-data.yml'
 
 permissions:
   contents: write
 
 concurrency:
-  group: update-data
+  group: update-and-deploy
   cancel-in-progress: false
 
 jobs:
-  update:
+  update-and-deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+
+      # ---------- 1. Оновлення даних (за розкладом або вручну) ----------
       - uses: actions/setup-node@v4
+        if: github.event_name != 'push'
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
-      - run: npm run update
+      - if: github.event_name != 'push'
+        run: npm ci
+      - if: github.event_name != 'push'
+        run: npm run update
       - name: Закомітити оновлені дані
+        if: github.event_name != 'push'
         run: |
           if git diff --quiet -- data/; then
             echo "Дані не змінилися"
@@ -35,3 +48,38 @@ jobs:
           git add data/
           git commit -m "Оновлення даних $(date -u +%Y-%m-%d)"
           git push
+
+      # ---------- 2. Публікація на хостинг ----------
+      - name: Зібрати файли сайту
+        run: |
+          mkdir -p dist/data
+          cp data/data.js data/data.json dist/data/
+          # Мітка версії, щоб браузери не показували вчорашні цифри з кешу
+          sed "s#data/data.js\"#data/data.js?v=$(date -u +%Y%m%d%H%M)\"#" index.html > dist/index.html
+          find dist -type f
+
+      - name: Залити на хостинг
+        env:
+          PROTO: ${{ secrets.DEPLOY_PROTOCOL }}   # ftp, ftps або sftp
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          PORT: ${{ secrets.DEPLOY_PORT }}        # необов'язково
+          USER: ${{ secrets.DEPLOY_USER }}
+          LFTP_PASSWORD: ${{ secrets.DEPLOY_PASSWORD }}
+          DIR: ${{ secrets.DEPLOY_DIR }}          # напр. public_html
+        run: |
+          if [ -z "$HOST" ]; then
+            echo "::warning::Секрети хостингу ще не додані — пропускаю публікацію."
+            exit 0
+          fi
+          sudo apt-get install -y -qq lftp >/dev/null
+          case "$PROTO" in
+            sftp) SETTINGS="" ;;
+            ftps) SETTINGS="set ftp:ssl-force true; set ftp:ssl-protect-data true;" ;;
+            *)    PROTO=ftp; SETTINGS="" ;;
+          esac
+          PORT_ARG=""; [ -n "$PORT" ] && PORT_ARG="-p $PORT"
+          lftp --env-password -u "$USER" $PORT_ARG "$PROTO://$HOST" -e "
+            $SETTINGS
+            set net:max-retries 3; set net:timeout 30;
+            mirror --reverse --verbose --parallel=2 dist ${DIR:-.};
+            bye"
