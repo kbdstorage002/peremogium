@@ -197,8 +197,8 @@
         <a href="calendar.html">Календар втрат</a>
       </nav>
     </div>
-    <h1>Велика картина: територія, втрати рф і гроші на війну</h1>
-    <p class="sub">Окрема новина — це один день. Тут — тренд за рік. Порівнюємо однакові місяці 2025 і 2026 років на даних Генштабу ЗСУ, DeepState та Мінфіну рф. Погані цифри теж показуємо.</p>
+    <h1>Велика картина війни</h1>
+    <p class="sub">Новина — це один день, а тут — тренд за рік: 2025 проти 2026, на перевірених даних.</p>
   </div>
   <div class="controls">
     <div class="row">
@@ -209,7 +209,6 @@
       </div>
       <button class="btn on" id="trendBtn"><span class="dot"></span><span>Тренди: увімк.</span></button>
     </div>
-    <button class="btn" id="replayBtn">↻ Відтворити анімацію</button>
   </div>
 </header>
 
@@ -514,7 +513,6 @@ document.getElementById('trendBtn').addEventListener('click', e => {
   e.currentTarget.lastElementChild.textContent = 'Тренди: ' + (trendsOn ? 'увімк.' : 'вимк.');
   applyVis();
 });
-document.getElementById('replayBtn').addEventListener('click', () => { for (const ch of [chA, chB]) { ch.reset(); ch.update(); } });
 
 // ================= INSIGHTS =================
 const ins = (n, ttl, rows, call) => `<div class="panel">
