@@ -141,7 +141,19 @@ async function fetchDeepState(today) {
       else { partial[y] = { month: m, value: +(latestArea - a.area).toFixed(1), asOf: latest.createdAt.slice(0, 10) }; break; }
     }
   }
-  return { monthly, partial, latest: { area: latestArea, at: latest.createdAt }, boundaries: areas };
+  // Для неповного поточного місяця — той самий відрізок торік (від 1-го числа
+  // до тієї самої дати), щоб порівнювати однакову кількість днів.
+  const partialPrevYear = {};
+  for (const [y, p] of Object.entries(partial)) {
+    const start = areas[`${+y - 1}-${pad(p.month)}`];
+    if (!start) continue;
+    const t = new Date(latest.createdAt); t.setUTCFullYear(t.getUTCFullYear() - 1);
+    const s = before(t.toISOString());
+    if (!s || s.createdAt < start.snapshotAt) continue;
+    partialPrevYear[+y - 1] = { month: p.month, value: +((await snapshotArea(s.id)) - start.area).toFixed(1), asOf: s.createdAt.slice(0, 10) };
+    log(`DeepState: той самий період торік (${p.month}.${+y - 1} до ${s.createdAt.slice(0, 10)}): ${partialPrevYear[+y - 1].value} км²`);
+  }
+  return { monthly, partial, partialPrevYear, latest: { area: latestArea, at: latest.createdAt }, boundaries: areas };
 }
 
 // ---------- main ----------
@@ -174,6 +186,7 @@ async function main() {
       unit: 'км²',
       monthly: territory.monthly,
       partial: territory.partial,
+      partialPrevYear: territory.partialPrevYear,
       occupiedNow: territory.latest.area,
       asOf: territory.latest.at.slice(0, 10),
       boundaries: territory.boundaries,

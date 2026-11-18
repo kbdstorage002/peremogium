@@ -157,6 +157,11 @@
   td .d { font-size: 11px; color: var(--muted); margin-left: 4px; }
   td.g { color: var(--good); } td.r { color: var(--bad); } td.a { color: #8cbcf3; } td.o { color: #e3b14f; }
   tr.hl td { background: rgba(255,255,255,.02); }
+  #statTbl td { font-size: 14px; padding: 13px 12px; }
+  #statTbl td:first-child { white-space: normal; }
+  #statTbl .hint { display: block; font-size: 12px; font-weight: 400; color: var(--muted); margin-top: 2px; }
+  #statTbl td.chg { font-family: Inter, sans-serif; font-weight: 600; }
+  .honest .fig small { display: block; font: 500 13px var(--mono); color: var(--muted); margin-top: 4px; }
   details { margin-top: 14px; }
   summary { cursor: pointer; display: inline-flex; gap: 8px; font-size: 13px; color: var(--text-2); padding: 8px 12px; border: 1px solid var(--border-2); border-radius: 9px; list-style: none; }
   summary::-webkit-details-marker { display: none; }
@@ -238,8 +243,8 @@
       <div class="explain" id="explainA"></div>
     </div>
     <div class="panel">
-      <div class="ch-title"><span class="sq" style="background:var(--y2025)"></span>Графік Б: Скільки військових втрачає росія</div>
-      <div class="ch-sub">Убиті та поранені за місяць, осіб (Генштаб ЗСУ)</div>
+      <div class="ch-title"><span class="sq" style="background:var(--y2025)"></span>Графік Б: Скільки військових втрачає росія за добу</div>
+      <div class="ch-sub">Убиті та поранені, у середньому за добу в кожному місяці, осіб (Генштаб ЗСУ)</div>
       <div class="chips" id="chipsB"></div>
       <div class="legend" id="legB"></div>
       <div class="chart-box"><canvas id="chB"></canvas></div>
@@ -307,12 +312,30 @@ const MFA = ['січень','лютий','березень','квітень','т
 const MGEN = ['січня','лютого','березня','квітня','травня','червня','липня','серпня','вересня','жовтня','листопада','грудня'];
 const DAYS_ALL = [31,28,31,30,31,30,31,31,30,31,30,31]; // 2025 і 2026 — не високосні
 
-// Порівнюємо лише повні місяці, які є для обох джерел і обох років.
-const N = Math.min(D.territory.monthly[2026].length, D.personnel.monthly[2026].length);
-const M = MS.slice(0, N), MF = MFA.slice(0, N), DAYS = DAYS_ALL.slice(0, N);
-const terr = { 2025: D.territory.monthly[2025].slice(0, N), 2026: D.territory.monthly[2026].slice(0, N) };
-const pers = { 2025: D.personnel.monthly[2025].slice(0, N), 2026: D.personnel.monthly[2026].slice(0, N) };
-const PERIOD = `січ–${MS[N - 1].toLowerCase()}`;
+// Повні місяці, які є для обох джерел.
+const NF = Math.min(D.territory.monthly[2026].length, D.personnel.monthly[2026].length);
+
+// Щоденні втрати рф за конкретний місяць (з щоденного ряду Генштабу)
+const t0 = Date.parse(D.personnel.daily.start + 'T00:00:00Z');
+const dayVal = new Map(D.personnel.daily.values.map((v, i) => [new Date(t0 + i * 864e5).toISOString().slice(0, 10), v]));
+const persDays = (y, m) => { const out = []; for (let d = 1; d <= DAYS_ALL[m]; d++) { const v = dayVal.get(`${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`); if (v == null) break; out.push(v); } return out; };
+
+// Неповний поточний місяць: додаємо, якщо є і для території, і для втрат, і є той самий період торік.
+const tp = D.territory.partial?.[2026], tpPrev = D.territory.partialPrevYear?.[2025];
+const ppDays26 = persDays(2026, NF);
+const HAS_P = !!(tp && tpPrev && tp.month === NF + 1 && ppDays26.length);
+const N = NF + (HAS_P ? 1 : 0);
+const P = NF;                                              // індекс неповного місяця
+const tDaysP = HAS_P ? new Date(tp.asOf).getUTCDate() : 0; // днів у неповному місяці (територія)
+const pDaysP = ppDays26.length;                            // днів у неповному місяці (втрати)
+
+const M = MS.slice(0, N).map((m, i) => HAS_P && i === P ? m + '*' : m);
+const MF = MFA.slice(0, N);
+// Для графіків: 2025 — повні місяці; 2026 — повні + неповний.
+const terrM = { 2025: D.territory.monthly[2025].slice(0, N), 2026: [...D.territory.monthly[2026].slice(0, NF), ...(HAS_P ? [tp.value] : [])] };
+const terrD = { 2025: DAYS_ALL.slice(0, N), 2026: [...DAYS_ALL.slice(0, NF), ...(HAS_P ? [tDaysP] : [])] };
+const persM = { 2025: D.personnel.monthly[2025].slice(0, N), 2026: [...D.personnel.monthly[2026].slice(0, NF), ...(HAS_P ? [ppDays26.reduce((a, b) => a + b, 0)] : [])] };
+const persD = { 2025: DAYS_ALL.slice(0, N), 2026: [...DAYS_ALL.slice(0, NF), ...(HAS_P ? [pDaysP] : [])] };
 const oil = D.oilGas, oil26 = oil.value2026, oil25 = oil26 / (1 + oil.changePct / 100);
 
 // ================= HELPERS =================
@@ -322,12 +345,13 @@ const sp = n => Math.round(n).toLocaleString('en-US').replace(/,/g, ' ');
 const dec = (n, d = 1) => n.toFixed(d).replace('.', ',');
 const cap = s => s[0].toUpperCase() + s.slice(1);
 const sum = a => a.reduce((s, x) => s + (x ?? 0), 0);
-const median = a => { const s = [...a].sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
 const dateUA = iso => { const d = new Date(iso); return `${d.getDate()} ${MGEN[d.getMonth()]} ${d.getFullYear()}`; };
 const pct = (a, b) => (b / a - 1) * 100;
 const sgn = (n, d = 2) => (n >= 0 ? '+' : '−') + dec(Math.abs(n), d);
 const plural = (n, [one, few, many]) => { n = Math.abs(Math.round(n)) % 100; const d = n % 10; return n > 10 && n < 20 ? many : d === 1 ? one : d >= 2 && d <= 4 ? few : many; };
+const daysW = n => `${n} ${plural(n, ['день', 'дні', 'днів'])}`;
 const sgnInt = n => (n >= 0 ? '+' : '−') + sp(Math.abs(n));
+const times = r => `у ${dec(r)} раза`;
 function regress(a) {
   const n = a.length, mx = (n - 1) / 2, my = sum(a) / n;
   let num = 0, den = 0;
@@ -335,22 +359,30 @@ function regress(a) {
   const k = num / den, b = my - k * mx;
   return { k, line: a.map((_, x) => +(b + k * x).toFixed(2)) };
 }
-
-// ================= DERIVED =================
-const days = sum(DAYS);
-const t25 = sum(terr[2025]), t26 = sum(terr[2026]);
-const r25 = t25 / days, r26 = t26 / days;
-const p25 = sum(pers[2025]), p26 = sum(pers[2026]);
-const price25 = p25 / t25, price26 = p26 / t26;
-const pd = y => terr[y].map((v, i) => +(v / DAYS[i]).toFixed(2));
-const pd25 = pd(2025), pd26 = pd(2026);
-const regA25 = regress(pd25), regA26 = regress(pd26);
-const regB25 = regress(pers[2025]), regB26 = regress(pers[2026]);
 const argmax = a => a.indexOf(Math.max(...a)), argmin = a => a.indexOf(Math.min(...a));
+
+// ================= DERIVED (однаковий період обох років) =================
+const tdays = sum(DAYS_ALL.slice(0, NF)) + tDaysP;
+const pdays = sum(DAYS_ALL.slice(0, NF)) + (HAS_P ? pDaysP : 0);
+const t25 = sum(D.territory.monthly[2025].slice(0, NF)) + (HAS_P ? tpPrev.value : 0);
+const t26 = sum(D.territory.monthly[2026].slice(0, NF)) + (HAS_P ? tp.value : 0);
+const p25 = sum(D.personnel.monthly[2025].slice(0, NF)) + (HAS_P ? sum(persDays(2025, P).slice(0, pDaysP)) : 0);
+const p26 = sum(D.personnel.monthly[2026].slice(0, NF)) + (HAS_P ? sum(ppDays26) : 0);
+const r25 = t25 / tdays, r26 = t26 / tdays;
+const pr25 = p25 / pdays, pr26 = p26 / pdays;
+const price25 = p25 / t25, price26 = p26 / t26;
+const pd = (m, d) => m.map((v, i) => +(v / d[i]).toFixed(2));
+const pd25 = pd(terrM[2025], terrD[2025]), pd26 = pd(terrM[2026], terrD[2026]);
+const pp25 = pd(persM[2025], persD[2025]), pp26 = pd(persM[2026], persD[2026]);
+const regA25 = regress(pd25), regA26 = regress(pd26);
+const regB25 = regress(pp25), regB26 = regress(pp26);
+const lastDay = HAS_P ? pDaysP : DAYS_ALL[NF - 1];
+const PERIOD_LONG = `1 січня – ${lastDay} ${MGEN[N - 1]}`;
+const PERIOD = `${MS[0].toLowerCase()}–${lastDay} ${MS[N - 1].toLowerCase()}`;
 
 // ================= HEADER / META =================
 document.getElementById('updated').textContent = '· оновлено ' + dateUA(D.generatedAt);
-document.getElementById('kpiMeta').textContent = `${cap(PERIOD)} · ${N} міс. (${days} ${plural(days, ['день', 'дні', 'днів'])}) · однакові місяці обох років`;
+document.getElementById('kpiMeta').textContent = `${PERIOD_LONG} · ${daysW(pdays)} · однакові дні обох років`;
 
 // ================= KPI =================
 function kpi({ label, badge, good, val, unit, a, b, fa, fb, human }) {
@@ -368,21 +400,23 @@ document.getElementById('kpis').innerHTML = [
   kpi({ label: 'Захоплена територія · разом', badge: (t26 >= t25 ? '+' : '') + dec(pct(t25, t26)) + '%', good: terrLess,
         val: sp(t26), unit: 'км²', a: t25, b: t26, fa: sp(t25), fb: sp(t26),
         human: terrLess
-          ? `За ${N} місяців 2026-го росія захопила <b>у ${dec(t25 / t26)} раза менше</b> землі, ніж за ті самі місяці 2025-го.`
-          : `За ${N} місяців 2026-го росія захопила <b>більше</b> землі, ніж за ті самі місяці 2025-го.` }),
+          ? `З 1 січня по ${lastDay} ${MGEN[N - 1]} росія захопила <b>${times(t25 / t26)} менше</b> землі, ніж за той самий період 2025-го.`
+          : `З 1 січня по ${lastDay} ${MGEN[N - 1]} росія захопила <b>більше</b> землі, ніж за той самий період 2025-го.` }),
   kpi({ label: 'Темп захоплення · на добу', badge: terrLess ? '÷' + dec(r25 / r26, 2) : '×' + dec(r26 / r25, 2), good: terrLess,
         val: dec(r26, 2), unit: 'км²/добу', a: r25, b: r26, fa: dec(r25, 2), fb: dec(r26, 2),
-        human: `${dec(r26, 1)} км² на добу — це приблизно <b>${sp(r26 * 140)} ${plural(r26 * 140, ['футбольне поле', 'футбольні поля', 'футбольних полів'])}</b>. Торік було ${sp(r25 * 140)}.` }),
+        human: terrLess
+          ? `Росія просувається <b>${times(r25 / r26)} повільніше</b>, ніж у 2025-му: ${dec(r26)} км² на добу проти ${dec(r25)}.`
+          : `Росія просувається <b>${times(r26 / r25)} швидше</b>, ніж у 2025-му: ${dec(r26)} км² на добу проти ${dec(r25)}.` }),
   kpi({ label: 'Втрати рф · особовий склад', badge: (persMore ? '+' : '') + dec(pct(p25, p26)) + '%', good: true,
         val: sp(p26), unit: 'осіб', a: p25, b: p26, fa: sp(p25), fb: sp(p26),
-        human: `Убиті та поранені за ${N} місяців. ` + (persMore
-          ? `Росія воює з <b>такою самою або більшою</b> інтенсивністю — а результат ${terrLess ? 'менший' : 'не кращий'}.`
+        human: `Убиті та поранені, ${sp(pr26)} на добу проти ${sp(pr25)} у 2025-му. ` + (persMore
+          ? `Росія воює <b>не менш інтенсивно</b> — а результат ${terrLess ? 'менший' : 'не кращий'}.`
           : `Росія втрачає <b>менше</b> людей, ніж торік.`) }),
   kpi({ label: 'Ціна 1 км² · для рф', badge: (priceUp ? '×' + dec(price26 / price25) : '÷' + dec(price25 / price26)), good: priceUp,
         val: sp(price26), unit: 'осіб/км²', a: price25, b: price26, fa: sp(price25), fb: sp(price26),
         human: `Скільки військових рф втрачає на кожен захоплений км². ` + (priceUp
-          ? `Земля коштує їй <b>у ${dec(price26 / price25)} раза дорожче</b>.`
-          : `Земля дістається їй <b>дешевше</b>, ніж торік.`) }),
+          ? `Земля коштує їй <b>${times(price26 / price25)} дорожче, ніж у 2025-му</b>.`
+          : `Земля дістається їй <b>дешевше, ніж у 2025-му</b>.`) }),
 ].join('');
 
 // ================= CHARTS =================
@@ -408,16 +442,22 @@ const trendDs = (label, data, color, year) => ({
   label, data, isTrend: true, year, type: 'line', borderColor: fade(color, .85), borderWidth: 1.5,
   borderDash: [5, 4], pointRadius: 0, pointHoverRadius: 0, fill: false, tension: 0, order: 0,
 });
+// неповний місяць 2026: точка порожниста / стовпчик блідіший
+const isP = (y, i) => y === 2026 && HAS_P && i === P;
 const lineDs = (y, data, color) => ({
   label: String(y), year: String(y), data, borderColor: color, backgroundColor: areaFill(color), fill: true,
   borderWidth: 2.2, tension: .35, pointRadius: 3.5, pointBackgroundColor: '#0e121a', pointBorderColor: color,
   pointBorderWidth: 2, pointHoverRadius: 6, order: 1,
+  segment: { borderDash: c => isP(y, c.p1DataIndex) ? [4, 4] : undefined },
 });
 const barDs = (y, data, color) => ({
-  label: String(y), year: String(y), data, backgroundColor: fade(color, .85), hoverBackgroundColor: color,
+  label: String(y), year: String(y), data,
+  backgroundColor: data.map((_, i) => fade(color, isP(y, i) ? .4 : .85)), hoverBackgroundColor: color,
+  borderColor: data.map((_, i) => isP(y, i) ? color : 'transparent'), borderWidth: data.map((_, i) => isP(y, i) ? 1.5 : 0),
   borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: 'bottom', categoryPercentage: .72, barPercentage: .88, order: 1,
 });
 const title = it => cap(MF[it[0].dataIndex]);
+const pNote = (y, i, days) => isP(+y, i) ? ` (неповний: ${daysW(days)})` : '';
 const baseOpts = (tipCb, yTicks) => ({
   maintainAspectRatio: false,
   interaction: { mode: 'index', intersect: false },
@@ -432,20 +472,22 @@ const chA = new Chart(document.getElementById('chA'), {
   type: 'line',
   data: { labels: M, datasets: [lineDs(2025, pd25, C25), lineDs(2026, pd26, C26),
     trendDs('Тренд 2025', regA25.line, C25, '2025'), trendDs('Тренд 2026', regA26.line, C26, '2026')] },
-  options: baseOpts(c => ` ${c.dataset.label}: ${dec(c.raw, 2)} км²/добу · ${sp(terr[c.dataset.label][c.dataIndex])} км² за місяць`, {}),
+  options: baseOpts(c => { const y = c.dataset.label, i = c.dataIndex;
+    return ` ${y}: ${dec(c.raw, 2)} км²/добу · ${sp(terrM[y][i])} км² за ${isP(+y, i) ? daysW(tDaysP) : 'місяць'}`; }, {}),
 });
 const chB = new Chart(document.getElementById('chB'), {
   type: 'bar',
-  data: { labels: M, datasets: [barDs(2025, pers[2025], C25), barDs(2026, pers[2026], C26),
+  data: { labels: M, datasets: [barDs(2025, pp25, C25), barDs(2026, pp26, C26),
     trendDs('Тренд 2025', regB25.line, C25, '2025'), trendDs('Тренд 2026', regB26.line, C26, '2026')] },
-  options: baseOpts(c => ` ${c.dataset.label}: ${sp(c.raw)} осіб`, { callback: v => v / 1000 + 'k' }),
+  options: baseOpts(c => { const y = c.dataset.label, i = c.dataIndex;
+    return ` ${y}: ${sp(c.raw)} осіб/добу · ${sp(persM[y][i])} за ${isP(+y, i) ? daysW(pDaysP) : 'місяць'}`; }, {}),
 });
 
 // chips, legends, footers, explanations
 document.getElementById('chipsA').innerHTML =
   `<span class="chip a">2025: ${sgn(regA25.k)} км²/добу щомісяця</span><span class="chip b">2026: ${sgn(regA26.k)} км²/добу щомісяця</span>`;
 document.getElementById('chipsB').innerHTML =
-  `<span class="chip a">2025: ${sgnInt(regB25.k)} осіб/міс</span><span class="chip b">2026: ${sgnInt(regB26.k)} осіб/міс</span>`;
+  `<span class="chip a">2025: ${sgnInt(regB25.k)} осіб/добу щомісяця</span><span class="chip b">2026: ${sgnInt(regB26.k)} осіб/добу щомісяця</span>`;
 const leg = shape => `
   <span><i class="${shape}" style="${shape === 'bx' ? 'background' : 'border-color'}:${C25}"></i>Факт 2025</span>
   <span class="tr"><i class="ln d" style="border-color:${C25}"></i>Тренд 2025</span>
@@ -454,16 +496,15 @@ const leg = shape => `
 document.getElementById('legA').innerHTML = leg('ln');
 document.getElementById('legB').innerHTML = leg('bx');
 
-const tp = D.territory.partial[2026], pp = D.personnel.partial[2026];
 const minA = argmin(pd26), maxA25 = argmax(pd25), maxA26 = argmax(pd26);
-document.getElementById('footA').innerHTML =
-  `Мін. 2026: ${MF[minA]} (${dec(pd26[minA], 2)} км²/добу)` +
-  (tp ? `<br>${cap(MFA[tp.month - 1])} 2026 ще триває: ${sp(tp.value)} км² станом на ${dateUA(tp.asOf)}` : '');
-const maxB = argmax(pers[2026]);
-const allTimeRecord = Math.max(...pers[2026]) >= Math.max(...pers[2025]);
+const partialFoot = days => HAS_P ? `<br>* ${MFA[P]} 2026 ще триває: показано ${daysW(days)}` : '';
+document.getElementById('footA').innerHTML = `Мін. 2026: ${MF[minA]} (${dec(pd26[minA], 2)} км²/добу)` + partialFoot(tDaysP);
+// пік — серед повних місяців (за сумою за місяць)
+const full26 = persM[2026].slice(0, NF), full25 = persM[2025].slice(0, NF);
+const maxB = argmax(full26);
+const allTimeRecord = Math.max(...full26) >= Math.max(...full25);
 document.getElementById('footB').innerHTML =
-  `Пік 2026: ${MF[maxB]} (${sp(pers[2026][maxB])} осіб)${allTimeRecord ? ' — більше, ніж будь-коли у 2025-му' : ''}` +
-  (pp ? `<br>${cap(MFA[pp.month - 1])} 2026 ще триває: ${sp(pp.value)} осіб станом на ${dateUA(pp.asOf)}` : '');
+  `Пік 2026: ${MF[maxB]} (${sp(full26[maxB])} осіб за місяць)${allTimeRecord ? ' — більше, ніж будь-коли у 2025-му' : ''}` + partialFoot(pDaysP);
 
 const dir = k => k >= 0 ? '<b>дедалі більше</b> (тренд іде вгору)' : '<b>дедалі менше</b> (тренд іде вниз)';
 document.getElementById('explainA').innerHTML = `<span class="lbl">Людською мовою</span>
@@ -519,12 +560,13 @@ const ins = (n, ttl, rows, call) => `<div class="panel">
   <div class="ins-head"><span class="num c${n}">0${n}</span>${ttl}</div>
   ${rows.map(([k, v, c]) => `<div class="kv"><span>${k}</span><b class="${c || ''}">${v}</b></div>`).join('')}
   <div class="callout c${n}">${call}</div></div>`;
-// Найкращі 3 місяці поспіль для росії у 2025-му vs ті самі місяці 2026-го
-let w = 0; for (let i = 1; i + 2 < N; i++) if (sum(terr[2025].slice(i, i + 3)) > sum(terr[2025].slice(w, w + 3))) w = i;
-const win25 = sum(terr[2025].slice(w, w + 3)), win26 = sum(terr[2026].slice(w, w + 3));
+// Найкращі 3 місяці поспіль для росії у 2025-му vs ті самі місяці 2026-го (лише повні місяці)
+const tf25 = terrM[2025].slice(0, NF), tf26 = terrM[2026].slice(0, NF);
+let w = 0; for (let i = 1; i + 2 < NF; i++) if (sum(tf25.slice(i, i + 3)) > sum(tf25.slice(w, w + 3))) w = i;
+const win25 = sum(tf25.slice(w, w + 3)), win26 = sum(tf26.slice(w, w + 3));
 const winLbl = `${MS[w].toLowerCase()}–${MS[w + 2].toLowerCase()}`;
-const L2 = `${MS[N - 2].toLowerCase()}–${MS[N - 1].toLowerCase()}`;
-const last25 = pers[2025][N - 2] + pers[2025][N - 1], last26 = pers[2026][N - 2] + pers[2026][N - 1];
+const L2 = `${MS[NF - 2].toLowerCase()}–${MS[NF - 1].toLowerCase()}`;
+const last25 = full25[NF - 2] + full25[NF - 1], last26 = full26[NF - 2] + full26[NF - 1];
 document.getElementById('insights').innerHTML = [
   ins(1, terrLess ? 'Наступ гальмує' : 'Наступ не гальмує', [
     ['Тренд 2025', sgn(regA25.k) + ' км²/добу', 'a'],
@@ -532,19 +574,19 @@ document.getElementById('insights').innerHTML = [
     [cap(winLbl), `${sp(win25)} → ${sp(win26)} км²`],
   ], `У найгарячіші для росії місяці 2025-го (${winLbl}) вона захопила ${sp(win25)} км². За ті самі місяці 2026-го — ${sp(win26)} км², на ${Math.round(Math.abs(pct(win25, win26)))}% ${win26 < win25 ? 'менше' : 'більше'}.`),
   ins(2, last26 > last25 ? 'Штурмів більше, не менше' : 'Інтенсивність штурмів', [
-    ['Пік втрат 2026', `${sp(pers[2026][maxB])} (${MF[maxB]})`, 'r'],
+    ['Пік втрат 2026', `${sp(full26[maxB])} (${MF[maxB]})`, 'r'],
     [cap(L2), `${sp(last25)} → ${sp(last26)}`],
-    ['Тренд 2026', sgnInt(regB26.k) + ' осіб/міс', 'o'],
+    ['Тренд 2026', sgnInt(regB26.k) + ' осіб/добу', 'o'],
   ], last26 > last25
-    ? `За останні два місяці рф втратила на ${Math.round(pct(last25, last26))}% більше людей, ніж торік. Тиск не слабшає — він розбивається об оборону.`
-    : `За останні два місяці рф втратила на ${Math.round(-pct(last25, last26))}% менше людей, ніж торік.`),
+    ? `За ${L2} рф втратила на ${Math.round(pct(last25, last26))}% більше людей, ніж торік. Тиск не слабшає — він розбивається об оборону.`
+    : `За ${L2} рф втратила на ${Math.round(-pct(last25, last26))}% менше людей, ніж торік.`),
   ins(3, priceUp ? '«Ціна» 1 км² зросла' : '«Ціна» 1 км² знизилася', [
     ['2025', sp(price25) + ' осіб/км²', 'a'],
     ['2026', sp(price26) + ' осіб/км²', 'o'],
     ['Зміна', priceUp ? '×' + dec(price26 / price25) : '÷' + dec(price25 / price26), priceUp ? 'r' : ''],
   ], priceUp
-    ? `Той самий квадратний кілометр коштує росії у ${dec(price26 / price25)} раза більше життів.`
-    : `Квадратний кілометр дістається росії дешевше, ніж торік.`),
+    ? `Той самий квадратний кілометр коштує росії ${times(price26 / price25)} більше життів, ніж у 2025-му.`
+    : `Квадратний кілометр дістається росії дешевше, ніж у 2025-му.`),
   ins(4, 'Менше грошей на війну', [
     ['Нафтогаз 2025', '≈' + dec(oil25, 2) + ' трлн ₽', 'a'],
     ['Нафтогаз 2026', dec(oil26, 2) + ' трлн ₽', 'o'],
@@ -555,30 +597,44 @@ document.getElementById('insights').innerHTML = [
 // ================= HONEST =================
 const h = (tag, ttl, fig, text) => `<div class="panel"><div class="h-tag">⚠ ${tag}</div><h3>${ttl}</h3><p>${text}</p><div class="fig">${fig}</div></div>`;
 document.getElementById('honest').innerHTML = [
-  h('Територія', 'росія все одно просувається', sp(t26) + ' км²',
-    `Повільніше, ніж торік, але за ${N} місяців 2026-го це ${t26 > 839 ? 'більше, ніж уся площа Києва (839 км²)' : `${Math.round(t26 / 839 * 100)}% площі Києва`}.`),
-  h('Інтенсивність', 'Штурми посилюються', sp(pers[2026][maxB]) + ' / міс',
+  h('Територія', 'росія все одно просувається', `${sp(t26)} км² у 2026 <small>проти ${sp(t25)} у 2025</small>`,
+    `Повільніше, ніж торік, але з початку 2026-го це ${t26 > 839 ? 'більше, ніж уся площа Києва (839 км²)' : `${Math.round(t26 / 839 * 100)}% площі Києва`}.`),
+  h('Інтенсивність', 'Штурми посилюються', `${sp(full26[maxB])} за ${MF[maxB]}`,
     `Рекордні втрати рф означають і рекордний тиск на наших військових. Фронт тримається ціною величезних зусиль.`),
   h('Економіка рф', 'Нафта подорожчала', 'Urals > $100', oil.lastMonthNote),
   h('Дані', 'Свіжі місяці можуть зрости', '105 → 341 км²',
-    `Ми рахуємо за картою DeepState на 1-ше число. Частину просувань DeepState позначає із запізненням: за липень–вересень 2026-го спершу було 105 км², після уточнення — 341.`),
+    `Ми рахуємо за картою DeepState. Частину просувань DeepState позначає із запізненням: за липень–вересень 2026-го спершу було 105 км², після уточнення — 341.`),
 ].join('');
 
 // ================= TABLES =================
-const st = a => { const mn = Math.min(...a), mx = Math.max(...a); return { sum: sum(a), avg: sum(a) / a.length, med: median(a), mn, mnI: a.indexOf(mn), mx, mxI: a.indexOf(mx) }; };
-const sT25 = st(terr[2025]), sT26 = st(terr[2026]), sP25 = st(pers[2025]), sP26 = st(pers[2026]);
-const ms = i => MS[i].toLowerCase();
+// Проста таблиця: показник — 2025 — 2026 — що змінилося (людською мовою)
+const bestM = (arr, n) => { const a = arr.slice(0, n), i = argmax(a); return [a[i], i]; };
+const [tm25, tmi25] = bestM(terrM[2025], NF), [tm26, tmi26] = bestM(terrM[2026], NF);
+const [pm25, pmi25] = bestM(full25, NF), [pm26, pmi26] = bestM(full26, NF);
+const chg = (good, text) => `<td class="chg ${good ? 'g' : 'r'}">${text}</td>`;
+const row = (name, hint, v25, v26, change) => `<tr><td>${name}<span class="hint">${hint}</span></td><td class="a">${v25}</td><td class="o">${v26}</td>${change}</tr>`;
 document.getElementById('statTbl').innerHTML = `
-  <tr><th>Показник і рік</th><th>Разом</th><th>У середньому</th><th>Медіана</th><th>Мінімум</th><th>Максимум</th><th>Тренд / міс.</th></tr>
-  <tr><td><i class="lg a"></i>Територія — 2025 <span class="d">${PERIOD}</span></td><td>${sp(sT25.sum)} км²</td><td class="a">${dec(r25, 2)} км²/добу</td><td>${sp(sT25.med)} км²/міс</td><td>${sp(sT25.mn)} <span class="d">${ms(sT25.mnI)}</span></td><td>${sp(sT25.mx)} <span class="d">${ms(sT25.mxI)}</span></td><td class="${regA25.k > 0 ? 'r' : 'g'}">${sgn(regA25.k)} км²/д</td></tr>
-  <tr class="hl"><td><i class="lg b"></i>Територія — 2026 <span class="d">${PERIOD}</span></td><td>${sp(sT26.sum)} км² <span class="d">(${dec(pct(t25, t26))}%)</span></td><td class="o">${dec(r26, 2)} км²/добу</td><td>${sp(sT26.med)} км²/міс</td><td class="g">${sp(sT26.mn)} <span class="d">${ms(sT26.mnI)}</span></td><td>${sp(sT26.mx)} <span class="d">${ms(sT26.mxI)}</span></td><td class="${regA26.k > 0 ? 'r' : 'g'}">${sgn(regA26.k)} км²/д</td></tr>
-  <tr><td><i class="lg a"></i>Втрати рф — 2025 <span class="d">${PERIOD}</span></td><td>${sp(sP25.sum)} осіб</td><td class="a">${sp(sP25.avg)} /міс</td><td>${sp(sP25.med)} /міс</td><td>${sp(sP25.mn)} <span class="d">${ms(sP25.mnI)}</span></td><td>${sp(sP25.mx)} <span class="d">${ms(sP25.mxI)}</span></td><td>${sgnInt(regB25.k)} осіб</td></tr>
-  <tr class="hl"><td><i class="lg b"></i>Втрати рф — 2026 <span class="d">${PERIOD}</span></td><td>${sp(sP26.sum)} осіб <span class="d">(${persMore ? '+' : ''}${dec(pct(p25, p26))}%)</span></td><td class="o">${sp(sP26.avg)} /міс</td><td>${sp(sP26.med)} /міс</td><td>${sp(sP26.mn)} <span class="d">${ms(sP26.mnI)}</span></td><td class="r">${sp(sP26.mx)} <span class="d">${ms(sP26.mxI)}</span></td><td class="o">${sgnInt(regB26.k)} осіб</td></tr>`;
+  <tr><th>Показник</th><th>2025</th><th>2026</th><th>Що змінилося</th></tr>
+  ${row('Захопила територію', PERIOD_LONG, sp(t25) + ' км²', sp(t26) + ' км²',
+      chg(terrLess, terrLess ? `${times(t25 / t26)} менше` : `${times(t26 / t25)} більше`))}
+  ${row('Темп захоплення', 'у середньому за добу', dec(r25) + ' км²', dec(r26) + ' км²',
+      chg(terrLess, terrLess ? `${times(r25 / r26)} повільніше` : `${times(r26 / r25)} швидше`))}
+  ${row('Найбільше захопила за місяць', 'найгірший для нас місяць', `${sp(tm25)} км² <span class="d">${MF[tmi25]}</span>`, `${sp(tm26)} км² <span class="d">${MF[tmi26]}</span>`,
+      chg(tm26 < tm25, tm26 < tm25 ? `${times(tm25 / tm26)} менше` : `${times(tm26 / tm25)} більше`))}
+  ${row('Втрати рф', PERIOD_LONG + ', убиті й поранені', sp(p25), sp(p26),
+      chg(persMore, `${persMore ? '+' : '−'}${Math.round(Math.abs(pct(p25, p26)))}%`))}
+  ${row('Втрати рф за добу', 'у середньому', sp(pr25), sp(pr26),
+      chg(persMore, `${persMore ? '+' : '−'}${sp(Math.abs(pr26 - pr25))} на добу`))}
+  ${row('Найбільші втрати за місяць', 'найкращий для нас місяць', `${sp(pm25)} <span class="d">${MF[pmi25]}</span>`, `${sp(pm26)} <span class="d">${MF[pmi26]}</span>`,
+      chg(pm26 >= pm25, pm26 >= pm25 ? `+${Math.round(pct(pm25, pm26))}%` : `−${Math.round(-pct(pm25, pm26))}%`))}
+  ${row('Ціна 1 км² для рф', 'скільки військових за кожен км²', sp(price25), sp(price26),
+      chg(priceUp, priceUp ? `${times(price26 / price25)} дорожче` : `${times(price25 / price26)} дешевше`))}`;
 
-document.getElementById('monthSummary').textContent = `Показати помісячну таблицю (${MFA[0]}–${MFA[N - 1]})`;
-let mt = `<tr><th>Місяць</th><th>Територія 2025</th><th>Територія 2026</th><th>км²/добу 2025</th><th>км²/добу 2026</th><th>Втрати рф 2025</th><th>Втрати рф 2026</th></tr>`;
+document.getElementById('monthSummary').textContent = `Показати по місяцях (${MFA[0]}–${MFA[N - 1]})`;
+let mt = `<tr><th>Місяць</th><th>Захопила 2025</th><th>Захопила 2026</th><th>Втрати рф 2025</th><th>Втрати рф 2026</th></tr>`;
 for (let i = 0; i < N; i++) {
-  mt += `<tr><td>${cap(MF[i])}</td><td>${dec(terr[2025][i])} км²</td><td>${dec(terr[2026][i])} км²</td><td>${dec(pd25[i], 2)}</td><td>${dec(pd26[i], 2)}</td><td>${sp(pers[2025][i])}</td><td>${sp(pers[2026][i])}</td></tr>`;
+  const p = HAS_P && i === P;
+  mt += `<tr><td>${cap(MF[i])}${p ? ` <span class="d">2026: ${daysW(pDaysP)}</span>` : ''}</td><td>${sp(terrM[2025][i])} км²</td><td>${sp(terrM[2026][i])} км²</td><td>${sp(persM[2025][i])}</td><td>${sp(persM[2026][i])}</td></tr>`;
 }
 document.getElementById('monthTbl').innerHTML = mt;
 

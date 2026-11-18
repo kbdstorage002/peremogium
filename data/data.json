@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-18T16:26:17.348Z",
+  "generatedAt": "2026-11-18T17:11:02.972Z",
   "years": [
     2025,
     2026
@@ -772,6 +772,13 @@
         "month": 11,
         "value": 59.1,
         "asOf": "2026-11-17"
+      }
+    },
+    "partialPrevYear": {
+      "2025": {
+        "month": 11,
+        "value": 277,
+        "asOf": "2025-11-16"
       }
     },
     "occupiedNow": 116902.24,

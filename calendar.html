@@ -116,6 +116,11 @@
   .mini:disabled { cursor: default; opacity: .45; }
   .mini .mh { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; gap: 6px; }
   .mini .mn { font-weight: 600; font-size: 14px; }
+  .mini .boom { font-size: clamp(11px, 1.3vw, 16px); }
+  .mini.best { border-color: rgba(255,90,98,.55); box-shadow: 0 0 0 1px rgba(255,90,98,.25), 0 0 24px rgba(255,90,98,.12); }
+  .mini.best:hover { border-color: rgba(255,90,98,.8); }
+  .fire { display: inline-block; animation: popIn .5s .35s both cubic-bezier(.2,1.6,.4,1); }
+  @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
   .mini .mt { font: 12px var(--mono); color: var(--text-2); white-space: nowrap; }
   .mini .cal .cell .n { display: none; }
   .mini .dot { cursor: inherit; pointer-events: none; display: block; }
@@ -355,13 +360,16 @@ function renderYear() {
     </div>
     <div class="ytotal">${people(tot)}${nDays < 365 ? ` за ${nDays} ${plural(nDays, ['день', 'дні', 'днів'])}` : ''} · у середньому ${sp(tot / nDays)} на добу</div>
     <div class="year-grid">`;
-  for (let m = 0; m < 12; m++) {
-    const st = monthStats(y, m);
-    h += `<button class="mini" data-m="${m}" ${st ? '' : 'disabled'} aria-label="${MFA[m]} ${y}">
-      <div class="mh"><span class="mn">${MFA[m]}</span><span class="mt">${st ? sp(st.tot) : '—'}</span></div>
-      ${calGrid(y, m, { labels: false, interactive: false })}
+  const stats = Array.from({ length: 12 }, (_, m) => monthStats(y, m));
+  // найкращий місяць року — з найбільшою сумою втрат рф
+  const bestM = stats.reduce((b, s, m) => (s && (b < 0 || s.tot > stats[b].tot) ? m : b), -1);
+  stats.forEach((st, m) => {
+    const best = m === bestM;
+    h += `<button class="mini${best ? ' best' : ''}" data-m="${m}" ${st ? '' : 'disabled'} aria-label="${MFA[m]} ${y}${best ? ', найкращий місяць року' : ''}">
+      <div class="mh"><span class="mn">${MFA[m]}${best ? ' <span class="fire" title="Найкращий місяць року">🔥</span>' : ''}</span><span class="mt">${st ? sp(st.tot) : '—'}</span></div>
+      ${calGrid(y, m, { labels: false, interactive: false, best: st?.mx.k })}
     </button>`;
-  }
+  });
   view.innerHTML = h + '</div><p class="note" style="text-align:center">Натисніть на місяць, щоб відкрити його докладно</p></div>';
   document.getElementById('prev').onclick = () => go({ y: y - 1 });
   document.getElementById('next').onclick = () => go({ y: y + 1 });
@@ -390,7 +398,8 @@ const legendVals = [1000, 2000, Math.round(MAX / 10) * 10];
 document.getElementById('legend').innerHTML = legendVals.map(v => {
   const s = Math.round(28 * Math.sqrt(v / MAX));
   return `<span><i class="c" style="width:${s}px;height:${s}px;background:${heat(v)}"></i>${sp(v)}</span>`;
-}).join('') + `<span>менше<i class="ramp" style="background:linear-gradient(90deg, ${heat(MIN)}, ${heat((MIN + MAX) / 2)}, ${heat(MAX)})"></i>більше</span>`;
+}).join('') + `<span>менше<i class="ramp" style="background:linear-gradient(90deg, ${heat(MIN)}, ${heat((MIN + MAX) / 2)}, ${heat(MAX)})"></i>більше</span>`
+  + `<span>🤯 найкращий день місяця</span><span>🔥 найкращий місяць року</span>`;
 
 const dateUA = iso => { const d = new Date(iso); return `${d.getUTCDate()} ${MGEN[d.getUTCMonth()]} ${d.getUTCFullYear()}`; };
 document.getElementById('note').innerHTML =
