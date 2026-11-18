@@ -109,10 +109,11 @@ function polygonsOf(g) {
 }
 
 const AREA_VERSION = 3; // змінювати, якщо змінюється правило підрахунку, щоб перерахувати кеш
-async function snapshotArea(id) {
-  await fs.mkdir(CACHE, { recursive: true });
-  const file = path.join(CACHE, `${id}.json`);
-  try { const c = JSON.parse(await fs.readFile(file, 'utf8')); if (c.v === AREA_VERSION) return c.areaKm2; } catch {}
+
+// Окупована площа знімка як один (мульти)полігон; тримаємо в пам'яті на час запуску.
+const shapes = new Map();
+async function occupiedShape(id) {
+  if (shapes.has(id)) return shapes.get(id);
   const g = await getJSON(`https://deepstatemap.live/api/history/${id}/geojson`);
   const polys = g.features
     .filter(f => isOccupied(String(f.properties?.name || '')))
@@ -122,9 +123,33 @@ async function snapshotArea(id) {
     .filter(p => IN_UKRAINE(turf.centroid(p).geometry.coordinates));
   // Об'єднуємо, щоб не рахувати двічі ділянки, які можуть перекриватися.
   const merged = polys.length > 1 ? turf.union(turf.featureCollection(polys)) : polys[0];
-  const areaKm2 = +(turf.area(merged) / 1e6).toFixed(2);
-  await fs.writeFile(file, JSON.stringify({ id, v: AREA_VERSION, areaKm2, polygons: polys.length }));
+  shapes.set(id, merged);
+  return merged;
+}
+
+async function snapshotArea(id) {
+  await fs.mkdir(CACHE, { recursive: true });
+  const file = path.join(CACHE, `${id}.json`);
+  try { const c = JSON.parse(await fs.readFile(file, 'utf8')); if (c.v === AREA_VERSION) return c.areaKm2; } catch {}
+  const areaKm2 = +(turf.area(await occupiedShape(id)) / 1e6).toFixed(2);
+  await fs.writeFile(file, JSON.stringify({ id, v: AREA_VERSION, areaKm2 }));
   return areaKm2;
+}
+
+// Між двома знімками окремо: що рф захопила (є в B, немає в A) і що звільнено (є в A, немає в B).
+// Чиста зміна = захоплено − звільнено.
+const DIFF_CACHE = path.join(DATA, 'cache', 'deepstate-diff');
+async function snapshotDiff(idA, idB) {
+  await fs.mkdir(DIFF_CACHE, { recursive: true });
+  const file = path.join(DIFF_CACHE, `${idA}-${idB}.json`);
+  try { const c = JSON.parse(await fs.readFile(file, 'utf8')); if (c.v === AREA_VERSION) return c; } catch {}
+  const A = await occupiedShape(idA), B = await occupiedShape(idB);
+  const km2 = f => (f ? turf.area(f) / 1e6 : 0);
+  const res = { v: AREA_VERSION, idA, idB,
+    gained: +km2(turf.difference(turf.featureCollection([B, A]))).toFixed(1),
+    lost: +km2(turf.difference(turf.featureCollection([A, B]))).toFixed(1) };
+  await fs.writeFile(file, JSON.stringify(res));
+  return res;
 }
 
 async function fetchDeepState(today) {
@@ -176,7 +201,26 @@ async function fetchDeepState(today) {
     partialPrevYear[+y - 1] = { month: p.month, value: +((await snapshotArea(s.id)) - start.area).toFixed(1), asOf: s.createdAt.slice(0, 10) };
     log(`DeepState: той самий період торік (${p.month}.${+y - 1} до ${s.createdAt.slice(0, 10)}): ${partialPrevYear[+y - 1].value} км²`);
   }
-  return { monthly, partial, partialPrevYear, latest: { area: latestArea, at: latest.createdAt }, boundaries: areas };
+  // Захоплено / звільнено по місяцях (геометрично)
+  const gained = {}, liberated = {}, partialGained = {}, partialLiberated = {};
+  for (const y of YEARS) {
+    gained[y] = []; liberated[y] = [];
+    for (let m = 1; m <= 12; m++) {
+      const a = areas[`${y}-${pad(m)}`];
+      const b = areas[m === 12 ? `${y + 1}-01` : `${y}-${pad(m + 1)}`];
+      if (monthly[y][m - 1] === undefined) break;
+      if (!a || !b) { gained[y].push(null); liberated[y].push(null); continue; }
+      const d = await snapshotDiff(a.snapshotId, b.snapshotId);
+      gained[y].push(d.gained); liberated[y].push(d.lost);
+    }
+    if (partial[y]) {
+      const a = areas[`${y}-${pad(partial[y].month)}`];
+      const d = await snapshotDiff(a.snapshotId, latest.id);
+      partialGained[y] = { ...partial[y], value: d.gained }; partialLiberated[y] = { ...partial[y], value: d.lost };
+    }
+  }
+  return { monthly, partial, partialPrevYear, gained, liberated, partialGained, partialLiberated,
+    latest: { area: latestArea, at: latest.createdAt }, boundaries: areas };
 }
 
 // ---------- main ----------
@@ -210,6 +254,10 @@ async function main() {
       monthly: territory.monthly,
       partial: territory.partial,
       partialPrevYear: territory.partialPrevYear,
+      gained: territory.gained,            // захоплено рф за місяць, км²
+      liberated: territory.liberated,      // звільнено за місяць, км²
+      partialGained: territory.partialGained,
+      partialLiberated: territory.partialLiberated,
       occupiedNow: territory.latest.area,
       asOf: territory.latest.at.slice(0, 10),
       boundaries: territory.boundaries,
