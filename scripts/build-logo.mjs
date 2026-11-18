@@ -56,12 +56,13 @@ await fs.writeFile(path.join(OUT, 'favicon.svg'), svg('0 0 100 100',
   'Перемогіум'));
 
 // 3. Вбудовуємо словесний знак у сторінку, щоб він брав колір із CSS
-const indexFile = path.join(ROOT, 'index.html');
-const html = await fs.readFile(indexFile, 'utf8');
 const inline = `<svg viewBox="${vbWord}" aria-hidden="true" focusable="false"><path fill="currentColor" d="${word.d}"/></svg>`;
-const updated = html.replace(/<!--logo:start-->[\s\S]*?<!--logo:end-->/, `<!--logo:start-->${inline}<!--logo:end-->`);
-if (updated === html && !html.includes(inline)) throw new Error('У index.html немає міток <!--logo:start--><!--logo:end-->');
-await fs.writeFile(indexFile, updated);
+for (const page of ['index.html', 'calendar.html']) {
+  const file = path.join(ROOT, page);
+  const html = await fs.readFile(file, 'utf8');
+  if (!html.includes('<!--logo:start-->')) throw new Error(`У ${page} немає міток <!--logo:start--><!--logo:end-->`);
+  await fs.writeFile(file, html.replace(/<!--logo:start-->[\s\S]*?<!--logo:end-->/, `<!--logo:start-->${inline}<!--logo:end-->`));
+}
 
 console.log('assets/logo.svg', vbWord);
 console.log('assets/favicon.svg');

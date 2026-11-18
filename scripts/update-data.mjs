@@ -67,6 +67,22 @@ function genStaffMonthly(recs, key, today) {
   return { monthly: out, partial, lastDate, total: recs[lastDate][key] };
 }
 
+// Втрати за календарний день D = підсумок у зведенні D+1 мінус підсумок у зведенні D
+// (ранкове зведення Генштабу підбиває попередню добу). Так сума днів місяця
+// точно дорівнює місячному значенню вище.
+function genStaffDaily(recs, key, start) {
+  const values = [];
+  const d = new Date(start + 'T00:00:00Z');
+  for (;;) {
+    const a = ymd(d);
+    d.setUTCDate(d.getUTCDate() + 1);
+    const b = ymd(d);
+    if (!recs[a] || !recs[b]) break;
+    values.push(recs[b][key] - recs[a][key]);
+  }
+  return { start, values };
+}
+
 // ---------- DeepState ----------
 const isOccupied = name =>
   /geoJSON\.status\.occupied/.test(name) ||
@@ -151,6 +167,7 @@ async function main() {
       partial: personnel.partial,
       asOf: personnel.lastDate,
       totalSinceInvasion: personnel.total,
+      daily: genStaffDaily(gsRecs, 'personnel_units', `${YEARS[0]}-01-01`),
     },
     territory: {
       source: 'DeepState (deepstatemap.live), різниця знімків карти на 1-ше число',
