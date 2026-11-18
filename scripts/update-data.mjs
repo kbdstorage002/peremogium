@@ -17,7 +17,8 @@ import * as turf from '@turf/turf';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DATA = path.join(ROOT, 'data');
 const CACHE = path.join(DATA, 'cache', 'deepstate');
-const YEARS = [2025, 2026];
+const YEARS = [2022, 2023, 2024, 2025, 2026]; // уся повномасштабна війна
+const DAILY_FROM = '2025-01-01';               // щоденний ряд для календаря втрат
 const UA = 'Mozilla/5.0 (compatible; peremogium-updater/1.0)';
 
 const log = (...a) => console.log('·', ...a);
@@ -53,13 +54,17 @@ async function fetchGenStaff(from, to) {
 // мінус підсумок на 1-ше число цього місяця.
 function genStaffMonthly(recs, key, today) {
   const out = {}, partial = {};
-  const lastDate = Object.keys(recs).sort().pop();
+  const dates = Object.keys(recs).sort(), lastDate = dates.at(-1), firstDate = dates[0];
   for (const y of YEARS) {
     out[y] = [];
     for (let m = 1; m <= 12; m++) {
       const a = `${y}-${pad(m)}-01`;
       const b = m === 12 ? `${y + 1}-01-01` : `${y}-${pad(m + 1)}-01`;
-      if (!recs[a]) break;
+      if (!recs[a]) {
+        // До початку зведень (до 25.02.2022): перший місяць війни рахуємо від нуля
+        if (a < firstDate) { out[y].push(recs[b] ? recs[b][key] : null); continue; }
+        break;
+      }
       if (recs[b]) out[y].push(recs[b][key] - recs[a][key]);
       else { partial[y] = { month: m, value: recs[lastDate][key] - recs[a][key], asOf: lastDate }; break; }
     }
@@ -84,26 +89,41 @@ function genStaffDaily(recs, key, start) {
 }
 
 // ---------- DeepState ----------
+// Окупована територія України: окуповане з 2022 року + Крим, ОРДЛО, Тузла.
+// Підходить і для нових знімків (мітки geoJSON.status.*), і для старих (лише назви).
+// На карті є й жартівливі «окуповані» чужі землі (Курили, Петсамо тощо) — їх відсікаємо
+// і за назвою, і за координатами (лише в межах України).
 const isOccupied = name =>
-  /geoJSON\.status\.occupied/.test(name) ||
-  /geoJSON\.territories\.(crimea|ordlo|tuzla)/.test(name);
+  /geoJSON\.status\.occupied|geoJSON\.territories\.(crimea|ordlo|tuzla)/.test(name) ||
+  (!/geoJSON\./.test(name) && (/^\s*([^.]*\.\s*)?окуповано/i.test(name) || /окупований крим|ордло|острів тузла|зайняті ворогом/i.test(name)));
+const IN_UKRAINE = ([lon, lat]) => lon > 22 && lon < 40.5 && lat > 44 && lat < 52.6;
 
-const strip2d = g => g.type === 'Polygon'
-  ? { type: 'Polygon', coordinates: g.coordinates.map(r => r.map(p => [p[0], p[1]])) }
-  : { type: 'MultiPolygon', coordinates: g.coordinates.map(pp => pp.map(r => r.map(p => [p[0], p[1]]))) };
+const ring2d = r => r.map(p => [p[0], p[1]]);
+// Повертає список полігонів (2D) з Polygon / MultiPolygon / GeometryCollection
+function polygonsOf(g) {
+  if (!g) return [];
+  if (g.type === 'Polygon') return [g.coordinates.map(ring2d)];
+  if (g.type === 'MultiPolygon') return g.coordinates.map(pp => pp.map(ring2d));
+  if (g.type === 'GeometryCollection') return (g.geometries || []).flatMap(polygonsOf);
+  return [];
+}
 
+const AREA_VERSION = 3; // змінювати, якщо змінюється правило підрахунку, щоб перерахувати кеш
 async function snapshotArea(id) {
   await fs.mkdir(CACHE, { recursive: true });
   const file = path.join(CACHE, `${id}.json`);
-  try { return JSON.parse(await fs.readFile(file, 'utf8')).areaKm2; } catch {}
+  try { const c = JSON.parse(await fs.readFile(file, 'utf8')); if (c.v === AREA_VERSION) return c.areaKm2; } catch {}
   const g = await getJSON(`https://deepstatemap.live/api/history/${id}/geojson`);
   const polys = g.features
-    .filter(f => /Polygon/.test(f.geometry?.type) && isOccupied(f.properties?.name || ''))
-    .map(f => turf.feature(strip2d(f.geometry)));
+    .filter(f => isOccupied(String(f.properties?.name || '')))
+    .flatMap(f => polygonsOf(f.geometry))
+    .filter(c => c.length && c[0].length >= 4)
+    .map(c => turf.polygon(c))
+    .filter(p => IN_UKRAINE(turf.centroid(p).geometry.coordinates));
   // Об'єднуємо, щоб не рахувати двічі ділянки, які можуть перекриватися.
   const merged = polys.length > 1 ? turf.union(turf.featureCollection(polys)) : polys[0];
   const areaKm2 = +(turf.area(merged) / 1e6).toFixed(2);
-  await fs.writeFile(file, JSON.stringify({ id, areaKm2, polygons: polys.length }));
+  await fs.writeFile(file, JSON.stringify({ id, v: AREA_VERSION, areaKm2, polygons: polys.length }));
   return areaKm2;
 }
 
@@ -131,11 +151,14 @@ async function fetchDeepState(today) {
   const latestArea = await snapshotArea(latest.id);
 
   const monthly = {}, partial = {};
+  let seen = false; // до першого знімка карти (квітень 2022) місяці порожні
   for (const y of YEARS) {
     monthly[y] = [];
     for (let m = 1; m <= 12; m++) {
       const a = areas[`${y}-${pad(m)}`];
       const b = areas[m === 12 ? `${y + 1}-01` : `${y}-${pad(m + 1)}`];
+      if (!a && !seen) { monthly[y].push(null); continue; }
+      seen = true;
       if (!a) break;
       if (b) monthly[y].push(+(b.area - a.area).toFixed(1));
       else { partial[y] = { month: m, value: +(latestArea - a.area).toFixed(1), asOf: latest.createdAt.slice(0, 10) }; break; }
@@ -179,7 +202,7 @@ async function main() {
       partial: personnel.partial,
       asOf: personnel.lastDate,
       totalSinceInvasion: personnel.total,
-      daily: genStaffDaily(gsRecs, 'personnel_units', `${YEARS[0]}-01-01`),
+      daily: genStaffDaily(gsRecs, 'personnel_units', DAILY_FROM),
     },
     territory: {
       source: 'DeepState (deepstatemap.live), різниця знімків карти на 1-ше число',
@@ -192,13 +215,14 @@ async function main() {
       boundaries: territory.boundaries,
     },
     oilGas: manual.oilGas,
+    oilGasYears: manual.oilGasYears,
   };
 
   // Невелика самоперевірка: щоб збій джерела не зіпсував сторінку.
   const problems = [];
   for (const y of YEARS) {
-    if (!data.personnel.monthly[y]?.length) problems.push(`немає втрат за ${y}`);
-    if (!data.territory.monthly[y]?.length) problems.push(`немає території за ${y}`);
+    if (!data.personnel.monthly[y]?.some(v => v != null)) problems.push(`немає втрат за ${y}`);
+    if (!data.territory.monthly[y]?.some(v => v != null)) problems.push(`немає території за ${y}`);
   }
   if (data.territory.occupiedNow < 100000 || data.territory.occupiedNow > 140000) problems.push(`дивна загальна площа: ${data.territory.occupiedNow}`);
   if (problems.length) throw new Error('Дані не пройшли перевірку: ' + problems.join('; '));

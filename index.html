@@ -200,6 +200,7 @@
       <span class="pill"><span class="dot"></span>2025 vs 2026 <span class="upd" id="updated"></span></span>
       <nav class="tabs" aria-label="Розділи">
         <a href="./" class="on" aria-current="page">Велика картина</a>
+        <a href="war.html">2026 проти всієї війни</a>
         <a href="calendar.html">Календар втрат</a>
       </nav>
     </div>
@@ -429,8 +430,8 @@ document.getElementById('kpis').innerHTML = [
   kpi({ label: 'Ціна 1 км² · для рф', badge: priceUp ? ratioBadge(price26 / price25, 'дорожче', '') : ratioBadge(price25 / price26, 'дешевше', ''), good: priceUp,
         val: sp(price26), unit: 'осіб/км²', a: price25, b: price26, fa: sp(price25), fb: sp(price26),
         human: `Скільки військових рф втрачає на кожен захоплений км². ` + (priceUp
-          ? `Земля коштує їй <b>${times(price26 / price25)} дорожче, ніж у 2025-му</b>.`
-          : `Земля дістається їй <b>дешевше, ніж у 2025-му</b>.`) }),
+          ? `Окупація 1 км² коштує їй <b>${times(price26 / price25)} дорожче, ніж у 2025-му</b>.`
+          : `Окупація 1 км² коштує їй <b>дешевше, ніж у 2025-му</b>.`) }),
 ].join('');
 
 // ================= CHARTS =================

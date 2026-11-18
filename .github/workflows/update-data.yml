@@ -9,6 +9,7 @@ on:
     paths:                  # зміни дизайну чи даних одразу йдуть на сайт
       - 'index.html'
       - 'calendar.html'
+      - 'war.html'
       - 'data/data.js'
       - 'data/data.json'
       - 'assets/**'
@@ -58,7 +59,7 @@ jobs:
           cp data/data.js data/data.json dist/data/
           cp -r assets dist/
           # Мітка версії, щоб браузери не показували вчорашні цифри з кешу
-          for page in index.html calendar.html; do
+          for page in index.html calendar.html war.html; do
             sed "s#data/data.js\"#data/data.js?v=$(date -u +%Y%m%d%H%M)\"#" "$page" > "dist/$page"
           done
           find dist -type f

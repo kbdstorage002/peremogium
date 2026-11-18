@@ -10,8 +10,41 @@
     "unit": "трлн руб.",
     "lastMonthNote": "У жовтні 2026 Urals коштувала $101 за барель, і нафтогазові доходи рф за місяць стали найвищими за півтора року.",
     "sources": [
-      { "title": "УНІАН", "url": "https://www.unian.ua/economics/energetics/dohodi-rosiji-vid-nafti-y-gazu-dosyagli-pivtorarichnogo-rekordu-13552011.html" },
-      { "title": "Цензор.НЕТ", "url": "https://censor.net/biz/news/4032458/naftogazovi-dohody-rf-u-jovtni-zrosly-bilshe-nij-udvichi" }
+      {
+        "title": "УНІАН",
+        "url": "https://www.unian.ua/economics/energetics/dohodi-rosiji-vid-nafti-y-gazu-dosyagli-pivtorarichnogo-rekordu-13552011.html"
+      },
+      {
+        "title": "Цензор.НЕТ",
+        "url": "https://censor.net/biz/news/4032458/naftogazovi-dohody-rf-u-jovtni-zrosly-bilshe-nij-udvichi"
+      }
+    ]
+  },
+  "oilGasYears": {
+    "_comment": "Нафтогазові доходи федерального бюджету рф за рік, трлн руб. (Мінфін рф). 2026 — з oilGas вище.",
+    "unit": "трлн руб.",
+    "years": {
+      "2022": 11.59,
+      "2023": 8.82,
+      "2024": 11.13,
+      "2025": 8.48
+    },
+    "notes": {
+      "2022": "≈11,59: розраховано з даних Мінфіну рф за 2023 рік (8,822 трлн, −23,9% до 2022)"
+    },
+    "sources": [
+      {
+        "title": "The Moscow Times (2022–2023)",
+        "url": "https://ru.themoscowtimes.com/2024/01/11/neftegazovie-dohodi-byudzheta-ruhnuli-na-chetvert-dira-65-trillionov-za-dva-goda-a118174"
+      },
+      {
+        "title": "Експерт (2023)",
+        "url": "https://expert.ru/news/dokhody-byudzheta-rf-v-2023-g-prevysili-plan"
+      },
+      {
+        "title": "NV (2024–2025)",
+        "url": "https://biz.nv.ua/ukr/finance/naftogazovi-dohodi-rosiji-u-2025-roci-obvalilis-do-naynizhchogo-rivnya-z-chasiv-pandemiji-koronavirusu-50576184.html"
+      }
     ]
   }
 }
