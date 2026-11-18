@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-17T17:33:46.574Z",
+  "generatedAt": "2026-11-18T08:34:33.326Z",
   "years": [
     2025,
     2026
@@ -38,12 +38,12 @@
     "partial": {
       "2026": {
         "month": 11,
-        "value": 36770,
-        "asOf": "2026-11-17"
+        "value": 38740,
+        "asOf": "2026-11-18"
       }
     },
-    "asOf": "2026-11-17",
-    "totalSinceInvasion": 1627040
+    "asOf": "2026-11-18",
+    "totalSinceInvasion": 1629010
   },
   "territory": {
     "source": "DeepState (deepstatemap.live), різниця знімків карти на 1-ше число",
@@ -79,12 +79,12 @@
     "partial": {
       "2026": {
         "month": 11,
-        "value": 53.4,
-        "asOf": "2026-11-15"
+        "value": 59.1,
+        "asOf": "2026-11-17"
       }
     },
-    "occupiedNow": 116896.61,
-    "asOf": "2026-11-15",
+    "occupiedNow": 116902.24,
+    "asOf": "2026-11-17",
     "boundaries": {
       "2025-01": {
         "area": 111578.61,
