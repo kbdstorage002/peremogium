@@ -18,7 +18,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DATA = path.join(ROOT, 'data');
 const CACHE = path.join(DATA, 'cache', 'deepstate');
 const YEARS = [2022, 2023, 2024, 2025, 2026]; // уся повномасштабна війна
-const DAILY_FROM = '2025-01-01';               // щоденний ряд для календаря втрат
+const DAILY_FROM = '2022-02-25';               // щоденний ряд (календар втрат): з першого зведення Генштабу
 const UA = 'Mozilla/5.0 (compatible; peremogium-updater/1.0)';
 
 const log = (...a) => console.log('·', ...a);
@@ -76,16 +76,19 @@ function genStaffMonthly(recs, key, today) {
 // (ранкове зведення Генштабу підбиває попередню добу). Так сума днів місяця
 // точно дорівнює місячному значенню вище.
 function genStaffDaily(recs, key, start) {
-  const values = [];
-  const d = new Date(start + 'T00:00:00Z');
-  for (;;) {
-    const a = ymd(d);
-    d.setUTCDate(d.getUTCDate() + 1);
-    const b = ymd(d);
-    if (!recs[a] || !recs[b]) break;
-    values.push(recs[b][key] - recs[a][key]);
+  // Якщо якогось дня зведення немає (буває у 2022-му), різницю між сусідніми
+  // зведеннями рівномірно розподіляємо на пропущені дні; такі дні позначаємо.
+  const dates = Object.keys(recs).filter(k => k >= start).sort();
+  const values = [], gaps = [];
+  for (let i = 0; i + 1 < dates.length; i++) {
+    const a = new Date(dates[i] + 'T00:00:00Z'), b = new Date(dates[i + 1] + 'T00:00:00Z');
+    const n = Math.round((b - a) / 864e5), diff = recs[dates[i + 1]][key] - recs[dates[i]][key];
+    for (let j = 0; j < n; j++) {
+      if (n > 1) gaps.push(values.length);
+      values.push(n > 1 ? Math.round(diff / n) : diff);
+    }
   }
-  return { start, values };
+  return { start: dates[0], values, estimated: gaps };
 }
 
 // ---------- DeepState ----------

@@ -1,0 +1,113 @@
+/* Спільне меню розділів для всіх сторінок Перемогіуму.
+   Підключається після стилів сторінки, тож має перевагу над ними. */
+
+.brand-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 16px 16px;
+  margin-bottom: 26px;
+}
+.brand-row > .pill { justify-self: start; }
+
+/* Плашка «Експеримент» — однакова на всіх сторінках */
+.pill {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 5px 12px; border: 1px solid var(--border-2); border-radius: 999px;
+  font: 400 12px Inter, system-ui, sans-serif; color: var(--text-2); background: var(--panel);
+}
+
+nav.tabs {
+  grid-column: 1 / -1;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px;
+  background: var(--panel);
+  border: 1px solid var(--border-2);
+  border-radius: 14px;
+}
+nav.tabs a {
+  flex: 1 1 auto;
+  text-align: center;
+  font: 600 15px Inter, system-ui, sans-serif;
+  color: var(--text);
+  text-decoration: none;
+  padding: 12px 18px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, .035);
+  border: 1px solid transparent;
+  transition: background .15s, border-color .15s, color .15s;
+}
+nav.tabs a:hover {
+  background: rgba(255, 255, 255, .08);
+  border-color: var(--border-2);
+}
+nav.tabs a:focus-visible {
+  outline: 2px solid #e3b14f;
+  outline-offset: 2px;
+}
+nav.tabs a.on {
+  background: rgba(201, 133, 0, .16);
+  color: #f2c66d;
+  border-color: rgba(201, 133, 0, .6);
+  box-shadow: 0 0 0 1px rgba(201, 133, 0, .18), 0 6px 22px rgba(201, 133, 0, .14);
+}
+
+@media (max-width: 680px) {
+  .brand-row { grid-template-columns: 1fr; }
+  nav.tabs a {
+    flex: 1 1 calc(50% - 6px);
+    font-size: 14px;
+    padding: 11px 8px;
+  }
+}
+
+/* ---------- Закріплене меню (assets/nav.js) ---------- */
+.stickybar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 40;
+  background: rgba(8, 10, 15, .86);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border-2);
+  transform: translateY(-110%); transition: transform .22s ease;
+}
+.stickybar.show { transform: none; }
+.stickybar-in {
+  max-width: 1240px; margin: 0 auto; padding: 8px 24px;
+  display: flex; align-items: center; gap: 16px;
+}
+.stickybar-logo { display: inline-flex; color: var(--text); flex: none; }
+.stickybar-logo svg { height: 14px; width: auto; display: block; }
+.stickybar-logo .mark { display: none; width: 26px; height: 26px; border-radius: 7px; }
+.stickybar-tabs {
+  position: relative; flex: 1; min-width: 0;
+  display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 var(--fl, 0px), #000 calc(100% - var(--fr, 0px)), transparent 100%);
+          mask-image: linear-gradient(90deg, transparent 0, #000 var(--fl, 0px), #000 calc(100% - var(--fr, 0px)), transparent 100%);
+}
+.stickybar-tabs::-webkit-scrollbar { display: none; }
+.stickybar.more-left .stickybar-tabs { --fl: 28px; }
+.stickybar.more-right .stickybar-tabs { --fr: 28px; }
+.stickybar-tabs a {
+  flex: none; white-space: nowrap;
+  font: 600 13px Inter, system-ui, sans-serif; color: var(--text-2); text-decoration: none;
+  padding: 7px 12px; border-radius: 8px; border: 1px solid transparent;
+}
+.stickybar-tabs a:hover { color: var(--text); background: rgba(255, 255, 255, .06); }
+.stickybar-tabs a.on { color: #f2c66d; background: rgba(201, 133, 0, .16); border-color: rgba(201, 133, 0, .5); }
+
+@media (max-width: 680px) {
+  .stickybar-in { padding: 6px 12px; gap: 10px; }
+  .stickybar-logo .word { display: none; }
+  .stickybar-logo .mark { display: block; }
+  .stickybar-tabs a { font-size: 12.5px; padding: 7px 10px; }
+}
+@media (prefers-reduced-motion: reduce) { .stickybar { transition: none; } }
+
+/* ---------- Посилання «куди далі» в картках ---------- */
+a.more {
+  display: inline-flex; align-items: center; gap: 6px; margin-top: 10px;
+  font: 600 13px Inter, system-ui, sans-serif; color: #8cbcf3; text-decoration: none;
+}
+a.more:hover { color: #b7d8fb; text-decoration: underline; text-underline-offset: 3px; }

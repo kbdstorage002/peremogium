@@ -6,6 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "update": "node scripts/update-data.mjs",
+    "update:npz": "node scripts/update-npz.mjs",
     "logo": "node scripts/build-logo.mjs"
   },
   "keywords": [],

@@ -10,8 +10,10 @@ on:
       - 'index.html'
       - 'calendar.html'
       - 'war.html'
+      - 'npz.html'
       - 'data/data.js'
       - 'data/data.json'
+      - 'data/npz.js'
       - 'assets/**'
       - '.github/workflows/update-data.yml'
 
@@ -39,6 +41,10 @@ jobs:
         run: npm ci
       - if: github.event_name != 'push'
         run: npm run update
+      - name: Оновити удари по НПЗ (Вікіпедія)
+        if: github.event_name != 'push'
+        continue-on-error: true   # якщо Вікіпедія недоступна — решта сайту однаково оновиться
+        run: npm run update:npz
       - name: Закомітити оновлені дані
         if: github.event_name != 'push'
         run: |
@@ -56,11 +62,11 @@ jobs:
       - name: Зібрати файли сайту
         run: |
           mkdir -p dist/data
-          cp data/data.js data/data.json dist/data/
+          cp data/data.js data/data.json data/npz.js dist/data/
           cp -r assets dist/
           # Мітка версії, щоб браузери не показували вчорашні цифри з кешу
-          for page in index.html calendar.html war.html; do
-            sed "s#data/data.js\"#data/data.js?v=$(date -u +%Y%m%d%H%M)\"#" "$page" > "dist/$page"
+          for page in index.html calendar.html war.html npz.html; do
+            sed -e "s#data/data.js\"#data/data.js?v=$(date -u +%Y%m%d%H%M)\"#" -e "s#data/npz.js\"#data/npz.js?v=$(date -u +%Y%m%d%H%M)\"#" "$page" > "dist/$page"
           done
           find dist -type f
 

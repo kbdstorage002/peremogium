@@ -8,6 +8,7 @@
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/d3-hierarchy@3.1.2/dist/d3-hierarchy.min.js"></script>
 <script src="data/data.js"></script>
 <style>
   :root {
@@ -94,6 +95,20 @@
   .dot.rec { box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px #fff; opacity: 1; }
   .boom { position: absolute; z-index: 6; transform: translate(-50%, -50%); font-size: clamp(16px, 2.2vw, 26px); line-height: 1; pointer-events: none; filter: drop-shadow(0 2px 3px rgba(0,0,0,.5)); animation: pop .5s .35s both cubic-bezier(.2,1.6,.4,1); }
   @keyframes pop { from { transform: translate(-50%, -50%) scale(0); } to { transform: translate(-50%, -50%) scale(1); } }
+  .rgrid { gap: 4px; }
+  .rgrid .cell { border-radius: 10px; }
+  .rgrid .rcell { cursor: pointer; }
+  .rgrid .rcell:hover, .rgrid .rcell:focus-visible { background: rgba(255,255,255,.05); outline: none; }
+  .rgrid .future { opacity: .35; }
+  .rdot { position: absolute; transform: translate(-50%, -50%); border-radius: 50%; background: var(--c); box-shadow: 0 0 0 1px var(--panel); pointer-events: none; }
+  .rn { position: absolute; left: 4px; top: 2px; z-index: 2; font: 600 11px Inter, sans-serif; color: var(--text); text-shadow: 0 1px 3px rgba(0,0,0,.8); pointer-events: none; }
+  .ybars { display: grid; gap: 7px; margin-bottom: 4px; }
+  .yb { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; gap: 8px; align-items: center; font: 12px var(--mono); color: var(--text-2); }
+  .yb .track { height: 8px; border-radius: 4px; background: rgba(255,255,255,.04); overflow: hidden; }
+  .yb .fill { height: 100%; border-radius: 4px; }
+  .yb b { color: var(--text); font-weight: 600; }
+  .tip .trow { display: block; font: 12px var(--mono); }
+  .tip .trow i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
   .legend .ramp { display: inline-block; width: 90px; height: 8px; border-radius: 4px; vertical-align: middle; margin: 0 6px; }
   .dot.today-partial { background: transparent; box-shadow: inset 0 0 0 2px var(--c); mix-blend-mode: normal; opacity: .8; }
 
@@ -149,6 +164,7 @@
     .mtitle { font-size: 20px; }
   }
 </style>
+<link rel="stylesheet" href="assets/nav.css">
 </head>
 <body>
 <div class="wrap">
@@ -156,10 +172,12 @@
 <header>
   <div class="brand-row">
     <a class="logo" href="./" aria-label="Перемогіум — на головну"><!--logo:start--><svg viewBox="6.5 -76.7 903.9 78.4" aria-hidden="true" focusable="false"><path fill="currentColor" d="M6.50-75L87.80-75L87.80 0L64.50 0L64.50-54.40L29.80-54.40L29.80 0L6.50 0L6.50-75ZM129.20-45.70L170.30-45.70L170.30-29.30L129.20-29.30L127.40-18.60L173.80-18.60L173.80 0L102.70 0L108.30-37.50L102.70-75L173.30-75L173.30-56.40L127.40-56.40L129.20-45.70ZM189.10-75L232.00-75Q241.80-75 248.85-71.70Q255.90-68.40 259.60-62.45Q263.30-56.50 263.30-48.40L263.30-48.40Q263.30-40.40 259.60-34.40Q255.90-28.40 248.85-25.10Q241.80-21.80 232.00-21.80L232.00-21.80L212.40-21.80L212.40 0L189.10 0L189.10-75ZM212.40-56.60L212.40-40.20L230.50-40.20Q234.90-40.20 237.35-42.40Q239.80-44.60 239.80-48.40L239.80-48.40Q239.80-52.40 237.35-54.50Q234.90-56.60 230.50-56.60L230.50-56.60L212.40-56.60ZM300-45.70L341.10-45.70L341.10-29.30L300-29.30L298.20-18.60L344.60-18.60L344.60 0L273.50 0L279.10-37.50L273.50-75L344.10-75L344.10-56.40L298.20-56.40L300-45.70ZM436.50-75L472.50-75L472.50 0L450.30 0L450.30-54.70L427.80 0L404.60 0L382.00-54.60L382.00 0L359.90 0L359.90-75L395.80-75L416.20-23.10L436.50-75ZM531.40 1.70L531.40 1.70Q517.90 1.70 507.75-3.20Q497.60-8.10 491.95-16.90Q486.30-25.70 486.30-37.50L486.30-37.50Q486.30-49.30 491.95-58.10Q497.60-66.90 507.75-71.80Q517.90-76.70 531.40-76.70L531.40-76.70Q544.90-76.70 555.05-71.80Q565.20-66.90 570.85-58.10Q576.50-49.30 576.50-37.50L576.50-37.50Q576.50-25.70 570.85-16.90Q565.20-8.10 555.05-3.20Q544.90 1.70 531.40 1.70ZM531.40-19L531.40-19Q538.10-19 542.95-21.25Q547.80-23.50 550.40-27.65Q553-31.80 553-37.50L553-37.50Q553-43.20 550.40-47.35Q547.80-51.50 542.95-53.75Q538.10-56 531.40-56L531.40-56Q524.70-56 519.85-53.75Q515-51.50 512.40-47.35Q509.80-43.20 509.80-37.50L509.80-37.50Q509.80-31.80 512.40-27.65Q515-23.50 519.85-21.25Q524.70-19 531.40-19ZM590.40-75L648.90-75L648.90-54.30L613.70-54.30L613.70 0L590.40 0L590.40-75ZM661.40 0L661.40-75L684.70-75L684.70 0L661.40 0ZM744.60 0L719.50 0L728.90-16.50L695.30-75L720.90-75L741.70-38.50L762.30-75L787.40-75L744.60 0ZM874.40-75L910.40-75L910.40 0L888.20 0L888.20-54.70L865.70 0L842.50 0L819.90-54.60L819.90 0L797.80 0L797.80-75L833.70-75L854.10-23.10L874.40-75Z"/></svg><!--logo:end--></a>
+    <span class="pill">🧪 Експеримент. Не є офіційним джерелом.</span>
     <nav class="tabs" aria-label="Розділи">
         <a href="./">2026 проти 2025</a>
         <a href="war.html">2026 проти всієї війни</a>
         <a href="calendar.html" class="on" aria-current="page">Календар втрат</a>
+        <a href="npz.html">НПЗдець</a>
       </nav>
   </div>
   <h1>Календар втрат рф</h1>
@@ -170,6 +188,7 @@
   <div class="seg" id="viewSeg" role="tablist">
     <button data-v="month" class="on" role="tab">Місяць</button>
     <button data-v="year" role="tab">Рік</button>
+    <button data-v="years" role="tab">Роки поруч</button>
   </div>
   <div class="legend" id="legend"></div>
 </div>
@@ -197,11 +216,14 @@ const MGEN = ['січня','лютого','березня','квітня','тр�
 const WD = ['Пн','Вт','Ср','Чт','Пт','Сб','Нд'];
 const WDF = ['понеділок','вівторок','середа','четвер','пʼятниця','субота','неділя'];
 
-const START = D.personnel.daily.start, VALS = D.personnel.daily.values;
-const t0 = Date.parse(START + 'T00:00:00Z');
-const byDate = new Map();
-VALS.forEach((v, i) => byDate.set(new Date(t0 + i * 864e5).toISOString().slice(0, 10), v));
-const lastDate = new Date(t0 + (VALS.length - 1) * 864e5);
+// Увесь щоденний ряд (з 2022) — для «Роки поруч»; «Місяць» і «Рік» — з 2025-го, як і раніше.
+const t0 = Date.parse(D.personnel.daily.start + 'T00:00:00Z');
+const allByDate = new Map(D.personnel.daily.values.map((v, i) => [new Date(t0 + i * 864e5).toISOString().slice(0, 10), v]));
+const CAL_FROM = '2025-01-01';
+const byDate = new Map([...allByDate].filter(([k]) => k >= CAL_FROM));
+const VALS = [...byDate.values()];
+const START = [...byDate.keys()][0];
+const lastDate = new Date([...byDate.keys()].at(-1) + 'T00:00:00Z');
 const LAST = { y: lastDate.getUTCFullYear(), m: lastDate.getUTCMonth() };
 const FIRST = { y: +START.slice(0, 4), m: +START.slice(5, 7) - 1 };
 const MAX = Math.max(...VALS);                      // спільний масштаб для всіх місяців і років
@@ -242,11 +264,12 @@ function monthStats(y, m, limitDays) {
 }
 
 // ---------- Стан (у адресі, щоб можна було поділитися посиланням) ----------
-let state = { view: 'month', y: LAST.y, m: LAST.m };
+let state = { view: 'month', y: LAST.y, m: LAST.m, cm: LAST.m };
 function readHash() {
   const h = location.hash.slice(1);
   let mm;
-  if ((mm = h.match(/^(\d{4})-(\d{2})$/))) state = { view: 'month', y: +mm[1], m: +mm[2] - 1 };
+  if ((mm = h.match(/^roky-(\d{2})$/))) state = { ...state, view: 'years', cm: Math.min(11, Math.max(0, +mm[1] - 1)) };
+  else if ((mm = h.match(/^(\d{4})-(\d{2})$/))) state = { view: 'month', y: +mm[1], m: +mm[2] - 1 };
   else if ((mm = h.match(/^(\d{4})$/))) state = { view: 'year', y: +mm[1], m: state.m };
   clamp();
 }
@@ -258,7 +281,7 @@ function clamp() {
 }
 function go(next) {
   state = { ...state, ...next }; clamp();
-  const h = state.view === 'year' ? `${state.y}` : `${state.y}-${pad(state.m + 1)}`;
+  const h = state.view === 'years' ? `roky-${pad(state.cm + 1)}` : state.view === 'year' ? `${state.y}` : `${state.y}-${pad(state.m + 1)}`;
   history.replaceState(null, '', '#' + h);
   render();
 }
@@ -342,6 +365,7 @@ function renderMonth() {
           ? `Це <b>на ${Math.abs(diff).toFixed(0)}% більше</b>, ніж за ті самі дні ${y - 1}-го.`
           : `Це на ${Math.abs(diff).toFixed(0)}% менше, ніж за ті самі дні ${y - 1}-го.`) : ''}
       </div>
+      <a class="more" href="#roky-${pad(m + 1)}">${MFA[m]} в усі роки війни →</a>
     </div>
   </div>`;
   document.getElementById('prev').onclick = () => go({ m: m - 1 });
@@ -378,10 +402,104 @@ function renderYear() {
   grow();
 }
 
+// ================= РОКИ ПОРУЧ =================
+// Для кожної дати місяця — концентричні кола, по одному на кожен рік війни.
+const RYEARS = [...new Set([...allByDate.keys()].map(k => +k.slice(0, 4)))];
+const RPAL = { 2022: '#199e70', 2023: '#9085e9', 2024: '#d55181', 2025: '#3987e5', 2026: '#c98500' };
+const EXTRA = ['#0ca30c', '#e66767', '#5598e7', '#eb6834'];
+const ycol = y => RPAL[y] || EXTRA[(y - 2027) % EXTRA.length];
+const RMAX = Math.max(...allByDate.values());
+// Щільна купка кіл для дати: площа кола ∝ втратам, роки в однаковому порядку.
+// (d3.packSiblings використовує поля x, y, r — тому рік зберігаємо як yr)
+const packCache = new Map();
+function cluster(m, d) {
+  const k = m + '-' + d; if (packCache.has(k)) return packCache.get(k);
+  const cs = RYEARS.map(yr => ({ yr, v: allByDate.get(key(yr, m, d)) }))
+    .filter(c => c.v != null && c.v > 0).map(c => ({ ...c, r: Math.sqrt(c.v) }));
+  if (cs.length) {
+    d3.packSiblings(cs);
+    const e = d3.packEnclose(cs);
+    cs.forEach(c => { c.x -= e.x; c.y -= e.y; });
+    cs.R = e.r;
+  }
+  packCache.set(k, cs); return cs;
+}
+// Спільний масштаб: найбільша купка за весь час заповнює ~96% клітинки.
+let maxR = 0;
+for (let m = 0; m < 12; m++) for (let d = 1; d <= 31; d++) maxR = Math.max(maxR, cluster(m, d).R || 0);
+const KPACK = 48 / maxR; // відсотків клітинки на одиницю радіуса
+const ryStats = (y, m) => { // втрати за місяць у році y
+  const vals = []; for (let d = 1; d <= daysIn(y, m); d++) { const v = allByDate.get(key(y, m, d)); if (v != null) vals.push(v); }
+  return vals.length ? { tot: vals.reduce((a, b) => a + b, 0), n: vals.length, avg: vals.reduce((a, b) => a + b, 0) / vals.length, full: vals.length === daysIn(y, m) } : null;
+};
+
+function renderYears() {
+  const m = state.cm;
+  const dmax = Math.max(...RYEARS.map(y => daysIn(y, m)));
+  // кожен день — купка кіл («конфеті»), по одному на рік, щільно одне біля одного
+  let g = '<div class="cal rgrid">';
+  for (let d = 1; d <= dmax; d++) {
+    const cl = cluster(m, d);
+    if (!cl.length) { g += `<div class="cell future"><span class="rn">${d}</span></div>`; continue; }
+    g += `<div class="cell rcell" tabindex="0" data-d="${d}" aria-label="${d} ${MGEN[m]}: ${cl.map(c => `${c.yr} — ${people(c.v)}`).join(', ')}">` +
+      cl.map(c => `<span class="rdot" style="--c:${ycol(c.yr)};left:${(50 + c.x * KPACK).toFixed(2)}%;top:${(50 + c.y * KPACK).toFixed(2)}%;width:${(2 * c.r * KPACK).toFixed(2)}%;height:${(2 * c.r * KPACK).toFixed(2)}%"></span>`).join('') +
+      `<span class="rn">${d}</span></div>`;
+  }
+  g += '</div>';
+
+  const st = RYEARS.map(y => ({ y, s: ryStats(y, m) })).filter(x => x.s);
+  const mxAvg = Math.max(...st.map(x => x.s.avg));
+  const bars = st.map(({ y, s }) => `<div class="yb"><span style="color:${ycol(y)}">${y}</span>
+      <div class="track"><div class="fill" style="width:${s.avg / mxAvg * 100}%;background:${ycol(y)}"></div></div>
+      <b>${sp(s.avg)}</b></div>`).join('');
+  const first = st[0], last = st.at(-1);
+  const ratio = last.s.avg / first.s.avg;
+  const best = st.reduce((a, b) => b.s.avg > a.s.avg ? b : a);
+  view.innerHTML = `
+  <div class="month-layout">
+    <div class="panel">
+      <div class="mhead">
+        <button class="navbtn" id="prev" aria-label="Попередній місяць">‹</button>
+        <div><div class="mtitle">${MFA[m]} · усі роки</div><div class="mtotal">${st.map(x => x.y).join(' · ')}</div></div>
+        <button class="navbtn" id="next" aria-label="Наступний місяць">›</button>
+      </div>
+      ${g}
+      <p class="note" style="text-align:center;margin-top:10px">Кожне коло — один рік (кольори — у легенді вгорі). Що більше коло, то більше втрат того дня. Наведіть або натисніть на день, щоб побачити цифри</p>
+    </div>
+    <div class="panel side">
+      <h3>${MFA[m]}: втрати рф за добу</h3>
+      <div class="ybars">${bars}</div>
+      <div class="explain"><span class="lbl">Людською мовою</span>
+        ${last.y === best.y ? `<b>${MFA[m]} ${last.y}-го — найважчий ${MFA[m].toLowerCase()} для рф за всю війну.</b> ` : ''}
+        У ${MLOC[m]} ${last.y} рф втрачає в середньому <b>${people(last.s.avg)}</b> на добу${last.s.full ? '' : ` (поки ${last.s.n} ${plural(last.s.n, ['день', 'дні', 'днів'])})`} —
+        ${ratio >= 1 ? `<b>у ${ratio.toFixed(1).replace('.', ',')} раза більше</b>` : `менше`}, ніж у ${MLOC[m]} ${first.y}.
+      </div>
+      <a class="more" href="war.html">Усі роки війни в цифрах →</a>
+    </div>
+  </div>`;
+  document.getElementById('prev').onclick = () => go({ cm: (m + 11) % 12 });
+  document.getElementById('next').onclick = () => go({ cm: (m + 1) % 12 });
+}
+function showRingTip(cell) {
+  const m = state.cm, d = +cell.dataset.d;
+  const rows = RYEARS.map(y => ({ y, v: allByDate.get(key(y, m, d)) })).filter(r => r.v != null);
+  const mx = Math.max(...rows.map(r => r.v));
+  tip.innerHTML = `<b>${d} ${MGEN[m]}</b>` + rows.map(r =>
+    `<span class="trow"><i style="background:${ycol(r.y)}"></i>${r.y}: <span class="v">${sp(r.v)}</span>${r.v === mx && rows.length > 1 ? ' — найбільше' : ''}</span>`).join('');
+  const r = cell.getBoundingClientRect();
+  tip.style.opacity = 1;
+  const tw = tip.offsetWidth, th = tip.offsetHeight;
+  let yy = r.top - th - 8; if (yy < 8) yy = r.bottom + 8;
+  tip.style.left = Math.max(8, Math.min(innerWidth - tw - 8, r.left + r.width / 2 - tw / 2)) + 'px';
+  tip.style.top = yy + 'px';
+}
+
 function render() {
   document.querySelectorAll('#viewSeg button').forEach(b => b.classList.toggle('on', b.dataset.v === state.view));
   hideTip();
-  state.view === 'year' ? renderYear() : renderMonth();
+  const lg = document.getElementById('legend');
+  if (state.view === 'years') { lg.innerHTML = RYEARS.map(y => `<span><i class="c" style="width:12px;height:12px;background:${ycol(y)}"></i>${y}</span>`).join(''); renderYears(); }
+  else { lg.innerHTML = LEGEND_HTML; state.view === 'year' ? renderYear() : renderMonth(); }
 }
 
 // Події підказки (делегування — працює і для миші, і для дотику)
@@ -390,13 +508,17 @@ view.addEventListener('mouseout', e => { if (e.target.closest('.dot')) hideTip()
 view.addEventListener('focusin', e => { const d = e.target.closest('.month-layout .dot'); if (d) showTip(d); });
 view.addEventListener('focusout', hideTip);
 view.addEventListener('click', e => { const d = e.target.closest('.month-layout .dot'); if (d) showTip(d); });
+view.addEventListener('mouseover', e => { const c = e.target.closest('.rcell'); if (c) showRingTip(c); });
+view.addEventListener('mouseout', e => { if (e.target.closest('.rcell')) hideTip(); });
+view.addEventListener('focusin', e => { const c = e.target.closest('.rcell'); if (c) showRingTip(c); });
+view.addEventListener('click', e => { const c = e.target.closest('.rcell'); if (c) showRingTip(c); });
 
 document.querySelectorAll('#viewSeg button').forEach(b => b.addEventListener('click', () => go({ view: b.dataset.v })));
 addEventListener('hashchange', () => { readHash(); render(); });
 
 // Легенда розмірів
 const legendVals = [1000, 2000, Math.round(MAX / 10) * 10];
-document.getElementById('legend').innerHTML = legendVals.map(v => {
+const LEGEND_HTML = legendVals.map(v => {
   const s = Math.round(28 * Math.sqrt(v / MAX));
   return `<span><i class="c" style="width:${s}px;height:${s}px;background:${heat(v)}"></i>${sp(v)}</span>`;
 }).join('') + `<span>менше<i class="ramp" style="background:linear-gradient(90deg, ${heat(MIN)}, ${heat((MIN + MAX) / 2)}, ${heat(MAX)})"></i>більше</span>`
@@ -406,12 +528,14 @@ const dateUA = iso => { const d = new Date(iso); return `${d.getUTCDate()} ${MGE
 document.getElementById('note').innerHTML =
   `Джерело: щоденні зведення <a href="https://www.facebook.com/GeneralStaff.ua" target="_blank" rel="noopener">Генштабу ЗСУ</a> через архів <a href="https://russianwarship.rip/" target="_blank" rel="noopener">russianwarship.rip</a>. ` +
   `Ранкове зведення підбиває попередню добу, тому втрати показано в той день, коли вони сталися. Останній день у календарі — ${dateUA(lastDate.toISOString())}. ` +
-  `Батальйон — умовно 500 осіб. Рекорд за весь період: ${people(MAX)} (${dateUA(recordDate)}), обведений білим.`;
+  `Батальйон — умовно 500 осіб. Рекорд за весь період: ${people(MAX)} (${dateUA(recordDate)}), обведений білим. ` +
+  `«Роки поруч» — з 25 лютого 2022; у перші тижні війни зведення виходили нерегулярно, тож дні того часу приблизні.`;
 document.getElementById('footer').textContent = `Перемогіум · календар втрат · дані оновлено ${dateUA(D.generatedAt)}`;
 
 readHash();
 render();
 })();
 </script>
+<script src="assets/nav.js"></script>
 </body>
 </html>

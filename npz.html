@@ -1,0 +1,566 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>НПЗдець · Перемогіум</title>
+<meta name="description" content="Усі нафтопереробні заводи рф, уражені українськими дронами: дати ударів, потужність, частка в переробці рф, карта.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="data/npz.js"></script>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #080a0f; --panel: #0e121a; --panel-2: #131824; --border: #1d2433; --border-2: #273044;
+    --text: #e8ecf3; --text-2: #a9b2c3; --muted: #6b7588; --accent: #5ab0ff;
+    --y2022: #199e70; --y2023: #9085e9; --y2024: #d55181; --y2025: #3987e5; --y2026: #c98500;
+    --good: #2fbf71; --good-bg: rgba(47,191,113,.12); --bad: #f0616d; --bad-bg: rgba(240,97,109,.12);
+    --warn: #e6a23c;
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --r: 14px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background:
+      radial-gradient(1200px 500px at 15% -10%, rgba(57,135,229,.10), transparent 60%),
+      radial-gradient(900px 400px at 100% 0%, rgba(201,133,0,.06), transparent 60%),
+      var(--bg);
+    color: var(--text); font: 15px/1.55 Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased; min-height: 100vh;
+  }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 0 24px; }
+
+  header { padding: 36px 0 26px; border-bottom: 1px solid var(--border); }
+  .brand-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; justify-content: space-between; margin-bottom: 22px; }
+  .logo { display: inline-flex; color: var(--text); text-decoration: none; }
+  .logo svg { height: 26px; width: auto; display: block; }
+  nav.tabs { display: inline-flex; flex-wrap: wrap; padding: 3px; background: var(--panel); border: 1px solid var(--border-2); border-radius: 10px; }
+  nav.tabs a { font: 500 13px Inter, sans-serif; color: var(--text-2); text-decoration: none; padding: 7px 13px; border-radius: 7px; }
+  nav.tabs a.on { background: var(--panel-2); color: var(--text); box-shadow: inset 0 0 0 1px var(--border-2); }
+  nav.tabs a:hover { color: var(--text); }
+  h1 { font-size: clamp(26px, 3.4vw, 36px); line-height: 1.2; margin: 0 0 10px; font-weight: 700; letter-spacing: -.015em; }
+  .sub { color: var(--text-2); max-width: 720px; margin: 0; }
+  .years-legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 16px; font: 12px var(--mono); color: var(--text-2); }
+  .years-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+
+  section { padding: 34px 0 6px; }
+  .sec-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+  .eyebrow { font: 500 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+  h2 { font-size: 21px; margin: 6px 0 0; font-weight: 650; letter-spacing: -.01em; }
+  .sec-meta { font-size: 12px; color: var(--muted); }
+  .panel { background: linear-gradient(180deg, var(--panel-2), var(--panel)); border: 1px solid var(--border); border-radius: var(--r); padding: 18px 20px; min-width: 0; }
+
+  /* KPI */
+  .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+  .kpi-top { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; min-height: 34px; }
+  .kpi-label { font: 500 11px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--text-2); }
+  .badge { font: 600 12px var(--mono); padding: 3px 8px; border-radius: 7px; white-space: nowrap; }
+  .badge.good { color: var(--good); background: var(--good-bg); box-shadow: inset 0 0 0 1px rgba(47,191,113,.3); }
+  .badge.bad { color: var(--bad); background: var(--bad-bg); box-shadow: inset 0 0 0 1px rgba(240,97,109,.3); }
+  .kpi-val { font: 600 30px var(--mono); margin: 8px 0 10px; letter-spacing: -.02em; }
+  .kpi-val .v26 { color: #e3b14f; }
+  .kpi-val small { font: 400 13px Inter, sans-serif; color: var(--text-2); margin-left: 6px; letter-spacing: 0; }
+  .ybars { display: grid; gap: 6px; }
+  .yb { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; gap: 8px; align-items: center; font: 12px var(--mono); color: var(--text-2); }
+  .yb .track { height: 8px; border-radius: 4px; background: rgba(255,255,255,.04); overflow: hidden; }
+  .yb .fill { height: 100%; border-radius: 4px; }
+  .yb b { color: var(--text); font-weight: 600; white-space: nowrap; }
+  .yb.cur b, .yb.cur span:first-child { color: #e3b14f; }
+  .yb .lib { color: var(--good); font-weight: 600; }
+  .yb .na { color: var(--muted); }
+  .kpi-human { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border-2); font-size: 13px; color: var(--text-2); line-height: 1.45; }
+  .kpi-human b { color: var(--text); }
+
+  /* Charts */
+  .charts { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+  .ch-title { font-weight: 600; font-size: 15px; }
+  .ch-sub { font-size: 12px; color: var(--muted); margin: 3px 0 10px; }
+  .chart-box { position: relative; height: 320px; }
+  .explain { margin-top: 12px; padding: 12px 14px; border-radius: 10px; background: rgba(90,176,255,.06); border: 1px solid rgba(90,176,255,.18); font-size: 13.5px; color: var(--text-2); }
+  .explain b { color: var(--text); font-weight: 600; }
+  .explain .lbl { font: 600 11px var(--mono); letter-spacing: .08em; color: var(--accent); text-transform: uppercase; display: block; margin-bottom: 4px; }
+
+  /* Table */
+  .tbl-scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { font: 500 11px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); text-align: right; padding: 10px 12px; border-bottom: 1px solid var(--border-2); white-space: nowrap; }
+  td { padding: 12px; text-align: right; border-bottom: 1px solid var(--border); font-family: var(--mono); white-space: nowrap; color: var(--text-2); }
+  th:first-child, td:first-child { text-align: left; font-family: Inter, sans-serif; }
+  td:first-child { color: var(--text); font-weight: 600; }
+  td .d { display: block; font: 11px Inter, sans-serif; color: var(--muted); }
+  td.lib { color: var(--good); }
+  tr.cur td { background: rgba(201,133,0,.06); }
+  tr.cur td:first-child { color: #e3b14f; }
+  .dotc { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; vertical-align: 1px; }
+
+  /* Notes */
+  .notes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+  .notes .panel { border-color: rgba(230,162,60,.25); }
+  .h-tag { font: 600 11px var(--mono); letter-spacing: .08em; color: var(--warn); text-transform: uppercase; }
+  .notes h3 { font-size: 15px; margin: 8px 0 6px; }
+  .notes p { margin: 0; font-size: 13px; color: var(--text-2); }
+
+  .sources ol { margin: 0; padding-left: 20px; color: var(--text-2); font-size: 13px; }
+  .sources li { margin: 7px 0; }
+  .sources a { color: #8cbcf3; text-decoration: none; border-bottom: 1px solid rgba(140,188,243,.3); }
+  footer { padding: 30px 0 50px; color: var(--muted); font: 12px var(--mono); border-top: 1px solid var(--border); margin-top: 34px; }
+  .err { margin: 40px 0; padding: 20px; border: 1px solid var(--bad); border-radius: var(--r); color: var(--bad); }
+
+  @media (max-width: 1050px) {
+    .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .charts, .notes { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 680px) {
+    .wrap { padding: 0 16px; }
+    .kpis { grid-template-columns: minmax(0, 1fr); }
+    .chart-box { height: 260px; }
+    .kpi-val { font-size: 26px; }
+  }
+  /* НПЗдець */
+  .kpi-val .v26 { color: #ff8a3d; }
+  .fire { color: #ff8a3d; }
+  .yb.wide { grid-template-columns: 96px minmax(0, 1fr) auto; }
+  .map-panel { padding: 0; overflow: hidden; }
+  #map { height: 520px; background: #0b0f17; }
+  .leaflet-container { font: 12px Inter, sans-serif; background: #0b0f17; }
+  .dark-tiles { filter: invert(1) hue-rotate(180deg) brightness(.75) contrast(.9) saturate(.4); }
+  .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: #0b0f17; color: var(--text); border: 1px solid var(--border-2); box-shadow: none; }
+  .leaflet-popup-content { margin: 10px 12px; font-size: 13px; line-height: 1.45; }
+  .leaflet-popup-content b { color: var(--text); }
+  .leaflet-popup-content .m { color: var(--text-2); font: 12px var(--mono); }
+  .leaflet-control-attribution { background: rgba(8,10,15,.7) !important; color: var(--muted) !important; }
+  .leaflet-control-attribution a { color: var(--text-2) !important; }
+  .map-legend { display: flex; gap: 16px; flex-wrap: wrap; padding: 12px 18px; border-top: 1px solid var(--border); font: 12px var(--mono); color: var(--text-2); align-items: center; }
+  .map-legend i { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+
+  .tools { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .seg { display: inline-flex; padding: 3px; background: var(--panel); border: 1px solid var(--border-2); border-radius: 9px; }
+  .seg button { font: 500 12px Inter, sans-serif; color: var(--text-2); background: none; border: 0; padding: 6px 11px; border-radius: 6px; cursor: pointer; }
+  .seg button.on { background: var(--panel-2); color: var(--text); box-shadow: inset 0 0 0 1px var(--border-2); }
+  .hits { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .hits li { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 12px; font-size: 13px; color: var(--text-2); }
+  .hits li span:first-child { font: 12px var(--mono); color: var(--text); }
+  .hits a { color: #8cbcf3; text-decoration: none; border-bottom: 1px solid rgba(140,188,243,.3); white-space: nowrap; }
+
+
+  .intro { margin: -4px 0 14px; font-size: 14px; color: var(--text-2); max-width: 860px; }
+  .intro b { color: var(--text); }
+  .rcards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-items: start; }
+  .rc { display: flex; flex-direction: column; gap: 10px; }
+  .rc.safe { border-color: rgba(47,191,113,.22); }
+  .rc-top { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+  .rc h3 { margin: 0; font-size: 16px; line-height: 1.3; }
+  .rc .who { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .hitbadge { font: 600 13px var(--mono); padding: 4px 9px; border-radius: 8px; white-space: nowrap; color: #ff8a3d; background: rgba(255,138,61,.12); box-shadow: inset 0 0 0 1px rgba(255,138,61,.3); }
+  .hitbadge.hot { color: #ff5a6a; background: rgba(240,69,79,.12); box-shadow: inset 0 0 0 1px rgba(240,69,79,.35); }
+  .hitbadge.ok { color: var(--good); background: var(--good-bg); box-shadow: inset 0 0 0 1px rgba(47,191,113,.3); }
+  .rc-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .rc-stats div { background: rgba(255,255,255,.025); border: 1px solid var(--border); border-radius: 9px; padding: 7px 9px; }
+  .rc-stats span { display: block; font: 500 10px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .rc-stats b { font: 600 15px var(--mono); color: var(--text); }
+  .rc .prod { font-size: 13px; color: var(--text-2); }
+  .rc .prod b { color: var(--text); font-weight: 500; }
+  .rc .tl { width: 100%; height: auto; display: block; }
+  .rc-last { display: flex; justify-content: space-between; gap: 8px; font: 12px var(--mono); color: var(--text-2); flex-wrap: wrap; }
+  .rc-last b { color: var(--text); font-weight: 600; }
+  .rc .note { font-size: 12.5px; color: var(--text-2); }
+  .rc button.more { align-self: flex-start; font: 500 12px Inter, sans-serif; color: #8cbcf3; background: none; border: 1px solid rgba(140,188,243,.3); border-radius: 7px; padding: 5px 10px; cursor: pointer; }
+  .more-wrap { display: flex; justify-content: center; margin-top: 16px; }
+  .show-more { font: 500 14px Inter, sans-serif; color: var(--text); background: var(--panel-2); border: 1px solid var(--border-2); border-radius: 10px; padding: 10px 22px; cursor: pointer; }
+  .show-more:hover { border-color: var(--accent); }
+  .show-more[hidden] { display: none; }
+  .rc .hits { max-height: 280px; overflow-y: auto; padding-right: 4px; border-top: 1px dashed var(--border-2); padding-top: 10px; }
+  .hits li { grid-template-columns: 82px minmax(0, 1fr); }
+  .ua-line-label { background: #0b0f17; color: var(--text); border: 1px solid var(--border-2); border-radius: 6px; font: 600 12px var(--mono); padding: 3px 7px; box-shadow: none; }
+  .ua-line-label::before { display: none; }
+  @media (max-width: 1050px) { .rcards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 680px) { .rcards { grid-template-columns: minmax(0, 1fr); } .tools { width: 100%; } }
+
+  .context { margin-top: 14px; padding: 14px 16px; border-radius: 12px; border: 1px solid rgba(255,138,61,.3); background: rgba(255,138,61,.06); font-size: 14px; color: var(--text-2); }
+  .context b { color: var(--text); }
+  .context a { color: #8cbcf3; text-decoration: none; border-bottom: 1px solid rgba(140,188,243,.3); }
+
+
+  @media (max-width: 680px) {
+    #map { height: 400px; }
+    .hits li { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  }
+</style>
+<link rel="stylesheet" href="assets/nav.css">
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="brand-row">
+    <a class="logo" href="./" aria-label="Перемогіум — на головну"><!--logo:start--><svg viewBox="6.5 -76.7 903.9 78.4" aria-hidden="true" focusable="false"><path fill="currentColor" d="M6.50-75L87.80-75L87.80 0L64.50 0L64.50-54.40L29.80-54.40L29.80 0L6.50 0L6.50-75ZM129.20-45.70L170.30-45.70L170.30-29.30L129.20-29.30L127.40-18.60L173.80-18.60L173.80 0L102.70 0L108.30-37.50L102.70-75L173.30-75L173.30-56.40L127.40-56.40L129.20-45.70ZM189.10-75L232.00-75Q241.80-75 248.85-71.70Q255.90-68.40 259.60-62.45Q263.30-56.50 263.30-48.40L263.30-48.40Q263.30-40.40 259.60-34.40Q255.90-28.40 248.85-25.10Q241.80-21.80 232.00-21.80L232.00-21.80L212.40-21.80L212.40 0L189.10 0L189.10-75ZM212.40-56.60L212.40-40.20L230.50-40.20Q234.90-40.20 237.35-42.40Q239.80-44.60 239.80-48.40L239.80-48.40Q239.80-52.40 237.35-54.50Q234.90-56.60 230.50-56.60L230.50-56.60L212.40-56.60ZM300-45.70L341.10-45.70L341.10-29.30L300-29.30L298.20-18.60L344.60-18.60L344.60 0L273.50 0L279.10-37.50L273.50-75L344.10-75L344.10-56.40L298.20-56.40L300-45.70ZM436.50-75L472.50-75L472.50 0L450.30 0L450.30-54.70L427.80 0L404.60 0L382.00-54.60L382.00 0L359.90 0L359.90-75L395.80-75L416.20-23.10L436.50-75ZM531.40 1.70L531.40 1.70Q517.90 1.70 507.75-3.20Q497.60-8.10 491.95-16.90Q486.30-25.70 486.30-37.50L486.30-37.50Q486.30-49.30 491.95-58.10Q497.60-66.90 507.75-71.80Q517.90-76.70 531.40-76.70L531.40-76.70Q544.90-76.70 555.05-71.80Q565.20-66.90 570.85-58.10Q576.50-49.30 576.50-37.50L576.50-37.50Q576.50-25.70 570.85-16.90Q565.20-8.10 555.05-3.20Q544.90 1.70 531.40 1.70ZM531.40-19L531.40-19Q538.10-19 542.95-21.25Q547.80-23.50 550.40-27.65Q553-31.80 553-37.50L553-37.50Q553-43.20 550.40-47.35Q547.80-51.50 542.95-53.75Q538.10-56 531.40-56L531.40-56Q524.70-56 519.85-53.75Q515-51.50 512.40-47.35Q509.80-43.20 509.80-37.50L509.80-37.50Q509.80-31.80 512.40-27.65Q515-23.50 519.85-21.25Q524.70-19 531.40-19ZM590.40-75L648.90-75L648.90-54.30L613.70-54.30L613.70 0L590.40 0L590.40-75ZM661.40 0L661.40-75L684.70-75L684.70 0L661.40 0ZM744.60 0L719.50 0L728.90-16.50L695.30-75L720.90-75L741.70-38.50L762.30-75L787.40-75L744.60 0ZM874.40-75L910.40-75L910.40 0L888.20 0L888.20-54.70L865.70 0L842.50 0L819.90-54.60L819.90 0L797.80 0L797.80-75L833.70-75L854.10-23.10L874.40-75Z"/></svg><!--logo:end--></a>
+    <span class="pill">🧪 Експеримент. Не є офіційним джерелом.</span>
+    <nav class="tabs" aria-label="Розділи">
+      <a href="./">2026 проти 2025</a>
+      <a href="war.html">2026 проти всієї війни</a>
+      <a href="calendar.html">Календар втрат</a>
+      <a href="npz.html" class="on" aria-current="page">НПЗдець</a>
+    </nav>
+  </div>
+  <h1>НПЗдець</h1>
+  <p class="sub">Усі нафтопереробні заводи рф, по яких влучали українські дрони й ракети: скільки разів, коли і наскільки важливий кожен завод для російського бензину й дизелю.</p>
+  <div class="years-legend" id="yearsLegend"></div>
+</header>
+
+<section>
+  <div class="sec-head">
+    <div><div class="eyebrow">Секція 01 • Заводи</div><h2>Кожен НПЗ рф: довідка й удари</h2></div>
+    <div class="tools">
+      <div class="seg" id="filterSeg">
+        <button data-f="all" class="on">усі</button>
+        <button data-f="hit">уражені</button>
+        <button data-f="safe">не уражені</button>
+      </div>
+      <div class="seg" id="sortSeg">
+        <button data-k="cap" class="on">за потужністю</button>
+        <button data-k="hits">за ударами</button>
+        <button data-k="last">за останнім ударом</button>
+        <button data-k="dist">за відстанню</button>
+      </div>
+    </div>
+  </div>
+  <p class="intro" id="cardsIntro"></p>
+  <div class="rcards" id="rcards"></div>
+  <div class="more-wrap"><button class="show-more" id="showMore" type="button"></button></div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div><div class="eyebrow">Секція 02 • Карта</div><h2>Карта влучань</h2></div>
+    <div class="sec-meta">Розмір кола — потужність заводу, колір — скільки разів по ньому влучали. Натисніть на завод, щоб побачити відстань до ДКУ.</div>
+  </div>
+  <div class="panel map-panel">
+    <div id="map"></div>
+    <div class="map-legend" id="mapLegend"></div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div><div class="eyebrow">Секція 03 • Головне</div><h2>Масштаб у чотирьох цифрах</h2></div>
+    <div class="sec-meta" id="kpiMeta"></div>
+  </div>
+  <div class="kpis" id="kpis"></div>
+  <div class="context" id="context"></div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div><div class="eyebrow">Секція 04 • Динаміка</div><h2>Як розгорталася кампанія</h2></div>
+  </div>
+  <div class="charts">
+    <div class="panel">
+      <div class="ch-title">Графік А: Скільки ударів по НПЗ щомісяця</div>
+      <div class="ch-sub">Удари з підтвердженими наслідками, по місяцях, від початку вторгнення</div>
+      <div class="chart-box"><canvas id="chA"></canvas></div>
+      <div class="explain" id="explainA"></div>
+    </div>
+    <div class="panel">
+      <div class="ch-title">Графік Б: Яка частка переробки рф під ударом</div>
+      <div class="ch-sub">Сумарна потужність заводів, уражених за місяць, у % від усієї первинної переробки рф</div>
+      <div class="chart-box"><canvas id="chB"></canvas></div>
+      <div class="explain" id="explainB"></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div><div class="eyebrow" style="color:var(--warn)">Секція 05 • Важливо знати</div><h2>Як читати ці цифри</h2></div>
+  </div>
+  <div class="notes">
+    <div class="panel"><div class="h-tag">Удар ≠ знищення</div><h3>Більшість заводів ремонтують за тижні</h3>
+      <p>Влучання зазвичай виводить з ладу одну установку (найчастіше колону первинної переробки), а не весь завод. Ремонт триває від кількох днів до кількох місяців. Тому важливі <b>повторні</b> удари: вони не дають заводу відновитися.</p></div>
+    <div class="panel"><div class="h-tag">Що рахуємо</div><h3>Лише удари з наслідками</h3>
+      <p>Беремо удари, після яких є підтвердження: пожежа, пошкоджена установка, зупинка заводу. Збиті на підльоті дрони й «невдалі спроби» не рахуємо. Кілька заводів Уфи за одну ніч — це один удар по групі. Справжніх ударів, найімовірніше, більше: Bloomberg нарахував за 2025 рік близько 120.</p></div>
+    <div class="panel"><div class="h-tag">Частка ринку</div><h3>Від проектної потужності</h3>
+      <p>Частка заводу — його проектна потужність (млн т нафти на рік) від усієї первинної переробки рф, ≈340 млн т. Реально заводи працюють на 75–85% потужності. Газопереробні заводи (Астрахань) і малі заводи без відомої потужності в частку не входять.</p></div>
+  </div>
+</section>
+
+<section class="sources">
+  <div class="sec-head"><div><div class="eyebrow">Секція 06 • Джерела</div><h2>Звідки цифри</h2></div></div>
+  <div class="panel"><ol id="sources"></ol></div>
+</section>
+
+<footer id="footer"></footer>
+</div>
+
+<script>
+(() => {
+const N = window.NPZ_DATA;
+if (!N) {
+  document.querySelector('.wrap').insertAdjacentHTML('afterbegin', '<div class="err">Не вдалося завантажити дані (data/npz.js).</div>');
+  return;
+}
+
+// ================= ДОВІДНИКИ =================
+const YEARS = [2022, 2023, 2024, 2025, 2026], CUR = 2026;
+const MS = ['січ','лют','бер','кві','тра','чер','лип','сер','вер','жов','лис','гру'];
+const MLOC = ['січні','лютому','березні','квітні','травні','червні','липні','серпні','вересні','жовтні','листопаді','грудні'];
+const MGEN = ['січня','лютого','березня','квітня','травня','червня','липня','серпня','вересня','жовтня','листопада','грудня'];
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const COLOR = Object.fromEntries(YEARS.map(y => [y, css('--y' + y)]));
+const sp = n => Math.round(n).toLocaleString('en-US').replace(/,/g, ' ');
+const dec = (n, d = 1) => n.toFixed(d).replace('.', ',');
+const plural = (n, [one, few, many]) => { n = Math.abs(Math.round(n)) % 100; const d = n % 10; return n > 10 && n < 20 ? many : d === 1 ? one : d >= 2 && d <= 4 ? few : many; };
+const dateUA = iso => { const [y, m, d] = iso.split('-').map(Number); return `${d} ${MGEN[m - 1]} ${y}`; };
+const dateShort = iso => { const [y, m, d] = iso.split('-').map(Number); return `${String(d).padStart(2, '0')}.${String(m).padStart(2, '0')}.${y}`; };
+const udar = n => plural(n, ['удар', 'удари', 'ударів']);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const TOTAL = N.russiaCapacityMt;
+
+// Відстань по прямій від державного кордону України (найближча з точок уздовж кордону з рф, включно з Кримом)
+const BORDER = [[52.34,33.29],[52.18,34.04],[51.83,34.42],[51.45,34.9],[51.05,35.32],[50.43,35.48],[50.38,36.25],[50.29,36.94],[50.03,37.9],[49.98,38.9],[49.6,39.7],[49.38,40.13],[48.85,40.0],[48.33,39.98],[47.85,38.85],[47.11,38.08],[45.36,36.5]];
+const hav = (a, b) => { const R = 6371, r = Math.PI / 180, dLa = (b[0] - a[0]) * r, dLo = (b[1] - a[1]) * r;
+  const h = Math.sin(dLa / 2) ** 2 + Math.cos(a[0] * r) * Math.cos(b[0] * r) * Math.sin(dLo / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); };
+const nearUA = r => BORDER.map(p => ({ p, d: hav(p, [r.lat, r.lon]) })).reduce((a, b) => b.d < a.d ? b : a);
+const distUA = r => nearUA(r).d;
+
+// ================= ДАНІ =================
+const byId = Object.fromEntries(N.refineries.map(r => [r.id, { ...r, hits: [] }]));
+for (const s of N.strikes) byId[s.id].hits.push(s);
+const REF = Object.values(byId).map(r => ({
+  ...r, n: r.hits.length, last: r.hits.at(-1)?.date ?? null, first: r.hits[0]?.date ?? null,
+  share: r.cap ? r.cap / TOTAL * 100 : null, dist: distUA(r),
+  byYear: Object.fromEntries(YEARS.map(y => [y, r.hits.filter(h => +h.date.slice(0, 4) === y).length])),
+}));
+const struck = REF.filter(r => r.n > 0), untouched = REF.filter(r => r.n === 0);
+const yearCount = Object.fromEntries(YEARS.map(y => [y, N.strikes.filter(s => +s.date.slice(0, 4) === y).length]));
+const asOf = N.asOf, [ay, am, ad] = asOf.split('-').map(Number);
+const samePeriod = y => N.strikes.filter(s => s.date.slice(0, 4) == y && s.date.slice(5) <= asOf.slice(5)).length;
+const capStruck = struck.reduce((a, r) => a + (r.cap || 0), 0);
+const capStruck26 = struck.filter(r => r.byYear[CUR] > 0).reduce((a, r) => a + (r.cap || 0), 0);
+const far = struck.reduce((a, b) => b.dist > a.dist ? b : a);
+const most = struck.reduce((a, b) => b.n > a.n ? b : a);
+
+// ================= ШАПКА =================
+document.getElementById('yearsLegend').innerHTML = YEARS.map(y => `<span><i style="background:${COLOR[y]}"></i>${y}${y === CUR ? ' (поточний)' : ''}</span>`).join('');
+document.getElementById('kpiMeta').textContent = `Дані станом на ${dateUA(asOf)} · ${N.strikes.length} ${udar(N.strikes.length)} з 2022 року`;
+
+// ================= КАРТКИ =================
+function bars(rows, fmtV) {
+  const mx = Math.max(...rows.map(r => r.v), 1);
+  return `<div class="ybars">${rows.map(({ y, v, lbl }) => `<div class="yb${y === CUR ? ' cur' : ''}"><span>${lbl ?? y}</span><div class="track"><div class="fill" style="width:${v / mx * 100}%;background:${COLOR[y] || 'var(--accent)'}"></div></div><b>${fmtV(v)}</b></div>`).join('')}</div>`;
+}
+function card({ label, badge, val, unit, body, human }) {
+  return `<div class="panel">
+    <div class="kpi-top"><div class="kpi-label">${label}</div>${badge ? `<span class="badge good">${badge}</span>` : ''}</div>
+    <div class="kpi-val"><span class="v26">${val}</span><small>${unit}</small></div>
+    ${body}
+    <div class="kpi-human">${human}</div>
+  </div>`;
+}
+const s26 = samePeriod(CUR), s25 = samePeriod(CUR - 1);
+const top5 = [...struck].sort((a, b) => b.n - a.n).slice(0, 5);
+document.getElementById('kpis').innerHTML = [
+  card({
+    label: 'Уражені НПЗ', badge: `${dec(capStruck / TOTAL * 100, 0)}% потужностей`,
+    val: struck.length, unit: `заводів з ${REF.length} у переліку`,
+    body: bars([
+      { y: 'all', lbl: 'усі', v: capStruck / TOTAL * 100 },
+      { y: CUR, lbl: CUR, v: capStruck26 / TOTAL * 100 },
+    ], v => dec(v, 0) + '%'),
+    human: `На ці заводи припадає <b>${dec(capStruck / TOTAL * 100, 0)}% потужностей нафтопереробки рф</b>. Лише у 2026-му під удар потрапили заводи з ${dec(capStruck26 / TOTAL * 100, 0)}% потужностей.`,
+  }),
+  card({
+    label: 'Ударів по НПЗ', badge: yearCount[CUR] >= Math.max(...YEARS.map(y => yearCount[y])) ? 'рекорд війни' : '',
+    val: N.strikes.length, unit: `з 2022 року`,
+    body: bars(YEARS.map(y => ({ y, v: yearCount[y] })), v => v),
+    human: `Кампанія по-справжньому почалася у 2024-му. У ${CUR}-му вже <b>${yearCount[CUR]} ${udar(yearCount[CUR])}</b> — більше, ніж за будь-який рік до того.`,
+  }),
+  card({
+    label: `Темп ${CUR} проти ${CUR - 1}`, badge: s25 ? `×${dec(s26 / s25)}` : '',
+    val: s26, unit: `${udar(s26)} з 1 січня`,
+    body: bars([{ y: CUR - 1, v: s25 }, { y: CUR, v: s26 }], v => v),
+    human: `За той самий період (1 січня — ${ad} ${MGEN[am - 1]}) торік було ${s25} ${udar(s25)}. Тепер — <b>${s25 ? (s26 >= s25 ? 'на ' + Math.round((s26 / s25 - 1) * 100) + '% більше' : 'на ' + Math.round((1 - s26 / s25) * 100) + '% менше') : ''}</b>.`,
+  }),
+  card({
+    label: 'Найчастіше під ударом', badge: '',
+    val: most.n, unit: `${udar(most.n)} · ${most.name.replace(/ \(.*/, '')}`,
+    body: bars(top5.map(r => ({ y: 'x', lbl: r.name.split(' ')[0], v: r.n })), v => v).replace(/class="yb"/g, 'class="yb wide"'),
+    human: `Найдальший уражений — <b>${far.name}</b>: ≈${sp(Math.round(far.dist / 50) * 50)} км від кордону України.`,
+  }),
+].join('');
+document.getElementById('context').innerHTML = `<b>Що це дає зараз.</b> ${N.context.text} <a href="${N.context.url}" target="_blank" rel="noopener">${N.context.title}</a>`;
+
+// ================= ГРАФІКИ =================
+Chart.defaults.color = css('--muted');
+Chart.defaults.font.family = 'JetBrains Mono, ui-monospace, monospace';
+Chart.defaults.font.size = 11;
+const gridC = 'rgba(255,255,255,.05)';
+const tip = {
+  backgroundColor: '#0b0f17', borderColor: '#273044', borderWidth: 1, padding: 10, cornerRadius: 8,
+  titleColor: '#e8ecf3', bodyColor: '#a9b2c3', titleFont: { family: 'Inter', weight: '600', size: 12 },
+  bodyFont: { family: 'JetBrains Mono', size: 12 }, boxPadding: 4,
+};
+const months = [];
+for (let y = 2022, m = 1; y < ay || (y === ay && m < am); m++) { if (m > 11) { m = 0; y++; } months.push({ y, m, key: `${y}-${String(m + 1).padStart(2, '0')}` }); }
+for (const mo of months) {
+  const hs = N.strikes.filter(s => s.date.startsWith(mo.key));
+  mo.n = hs.length;
+  mo.ids = [...new Set(hs.map(s => s.id))];
+  mo.cap = mo.ids.reduce((a, id) => a + (byId[id].cap || 0), 0);
+  mo.partial = mo.y === ay && mo.m === am - 1;
+}
+const mLabel = mo => `${MS[mo.m]} ${String(mo.y).slice(2)}`;
+const tickCb = (v, i) => months[i].m === 0 ? String(months[i].y) : (i === 0 ? 'лют 22' : '');
+const barColor = months.map(mo => mo.partial ? COLOR[mo.y] + '99' : COLOR[mo.y]);
+new Chart(document.getElementById('chA'), {
+  type: 'bar',
+  data: { labels: months.map(mLabel), datasets: [{ data: months.map(mo => mo.n), backgroundColor: barColor, borderRadius: 2, barPercentage: .9, categoryPercentage: .9 }] },
+  options: {
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: { ...tip, callbacks: {
+      title: it => { const mo = months[it[0].dataIndex]; return `${MS[mo.m]} ${mo.y}${mo.partial ? ` (по ${ad}-те)` : ''}`; },
+      label: c => ` ${c.raw} ${udar(c.raw)}`,
+      afterLabel: c => { const ids = months[c.dataIndex].ids; return ids.length ? ' ' + ids.map(id => byId[id].name.replace(/ \(.*/, '')).join(', ') : ''; },
+    } } },
+    scales: {
+      x: { grid: { display: false }, border: { color: '#273044' }, ticks: { autoSkip: false, maxRotation: 0, callback: tickCb } },
+      y: { grid: { color: gridC }, border: { display: false }, ticks: { precision: 0, maxTicksLimit: 6 } },
+    },
+  },
+});
+const peakM = months.reduce((a, b) => b.n > a.n ? b : a);
+const first10 = months.findIndex(mo => mo.n >= 5);
+document.getElementById('explainA').innerHTML = `<span class="lbl">Людською мовою</span>
+  Перші два роки війни удари по НПЗ були поодинокими (${yearCount[2022] + yearCount[2023]} за 2022–2023). Систематичною кампанія стала з 2024-го, а у 2026-му удари йдуть майже щодня.
+  Найбільше — <b>${peakM.n} ${udar(peakM.n)}</b> у ${MLOC[peakM.m]} ${peakM.y}. Блідий стовпчик — місяць ще не закінчився.`;
+
+new Chart(document.getElementById('chB'), {
+  type: 'bar',
+  data: { labels: months.map(mLabel), datasets: [{ data: months.map(mo => +(mo.cap / TOTAL * 100).toFixed(1)), backgroundColor: barColor, borderRadius: 2, barPercentage: .9, categoryPercentage: .9 }] },
+  options: {
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: { ...tip, callbacks: {
+      title: it => { const mo = months[it[0].dataIndex]; return `${MS[mo.m]} ${mo.y}${mo.partial ? ` (по ${ad}-те)` : ''}`; },
+      label: c => ` ${dec(c.raw)}% переробки рф`,
+      afterLabel: c => ` ${months[c.dataIndex].ids.length} ${plural(months[c.dataIndex].ids.length, ['завод', 'заводи', 'заводів'])}`,
+    } } },
+    scales: {
+      x: { grid: { display: false }, border: { color: '#273044' }, ticks: { autoSkip: false, maxRotation: 0, callback: tickCb } },
+      y: { grid: { color: gridC }, border: { display: false }, max: 100, ticks: { maxTicksLimit: 6, callback: v => v + '%' } },
+    },
+  },
+});
+const peakB = months.reduce((a, b) => b.cap > a.cap ? b : a);
+const avg = (y) => { const ms = months.filter(mo => mo.y === y && !mo.partial); return ms.reduce((a, mo) => a + mo.cap, 0) / ms.length / TOTAL * 100; };
+document.getElementById('explainB').innerHTML = `<span class="lbl">Людською мовою</span>
+  Це не «скільки зупинено», а скільки переробки припадає на заводи, які за місяць хоча б раз отримали удар. У середньому за місяць 2025-го — ${dec(avg(2025), 0)}%, 2026-го — <b>${dec(avg(CUR), 0)}%</b>.
+  Пік — у ${MLOC[peakB.m]} ${peakB.y}: під ударом були заводи з <b>${dec(peakB.cap / TOTAL * 100, 0)}%</b> усієї переробки рф.`;
+
+// ================= КАРТКИ ЗАВОДІВ =================
+const T0 = Date.UTC(2022, 1, 24), T1 = Date.UTC(ay, am - 1, ad);
+function timeline(r) {
+  const W = 320, H = 22, x = d => 4 + (Date.parse(d + 'T00:00:00Z') - T0) / (T1 - T0) * (W - 8);
+  const yt = YEARS.slice(1).map(y => { const xx = x(`${y}-01-01`); return `<line x1="${xx}" x2="${xx}" y1="3" y2="${H - 3}" stroke="#273044"/><text x="${xx + 3}" y="${H - 1}" font-size="8" fill="#6b7588" font-family="JetBrains Mono, monospace">${String(y).slice(2)}</text>`; }).join('');
+  return `<svg class="tl" viewBox="0 0 ${W} ${H}" aria-label="${r.n} ${udar(r.n)} на часовій осі">${yt}<line x1="4" x2="${W - 4}" y1="${H / 2 - 2}" y2="${H / 2 - 2}" stroke="#1d2433"/>${
+    r.hits.map(h => `<circle cx="${x(h.date).toFixed(1)}" cy="${H / 2 - 2}" r="3.2" fill="${COLOR[+h.date.slice(0, 4)]}" fill-opacity=".85"/>`).join('')}</svg>`;
+}
+const PAGE = 9;
+let sortKey = 'cap', filterKey = 'all', shown = PAGE;
+const sorters = {
+  hits: (a, b) => b.n - a.n || (b.cap || 0) - (a.cap || 0),
+  cap: (a, b) => (b.cap || 0) - (a.cap || 0) || b.n - a.n,
+  last: (a, b) => (b.last || '').localeCompare(a.last || '') || b.n - a.n,
+  dist: (a, b) => b.dist - a.dist,
+};
+const filters = { all: () => true, hit: r => r.n > 0, safe: r => r.n === 0 };
+const openCards = new Set();
+const capTxt = r => r.cap ? `${dec(r.cap, r.cap % 1 ? 1 : 0)}<small> млн т</small>` : (/ГПЗ/.test(r.name) ? 'ГПЗ' : 'малий');
+function rcard(r) {
+  const isOpen = openCards.has(r.id);
+  const badge = r.n ? `<span class="hitbadge${r.n >= 10 ? ' hot' : ''}">${r.n} ${udar(r.n)}</span>` : '<span class="hitbadge ok">не уражений</span>';
+  return `<article class="panel rc${r.n ? '' : ' safe'}" data-id="${r.id}">
+    <div class="rc-top"><div><h3>${esc(r.name)}</h3><div class="who">${esc(r.owner)} · ${esc(r.region)}</div></div>${badge}</div>
+    <div class="rc-stats">
+      <div><span>Потужність</span><b>${capTxt(r)}</b></div>
+      <div><span>Частка рф</span><b>${r.share ? dec(r.share) + '%' : '—'}</b></div>
+      <div><span>Від ДКУ</span><b>${sp(Math.round(r.dist / 10) * 10)}<small> км</small></b></div>
+    </div>
+    <div class="prod">Виробляє: <b>${esc(r.prod)}</b></div>
+    ${r.note ? `<div class="note">${esc(r.note)}</div>` : ''}
+    ${r.n ? `${timeline(r)}
+      <div class="rc-last"><span>Останній удар: <b>${dateShort(r.last)}</b></span><span>${r.byYear[CUR] ? `у ${CUR}: <b>${r.byYear[CUR]}</b>` : `перший: ${dateShort(r.first)}`}</span></div>
+      <button class="more" type="button" aria-expanded="${isOpen}">${isOpen ? 'Сховати удари ▴' : `Усі удари й джерела (${r.n}) ▾`}</button>
+      ${isOpen ? `<ul class="hits">${[...r.hits].reverse().map(s => `<li><span>${dateShort(s.date)}</span><span>${esc(s.note)} <a href="${esc(s.src)}" target="_blank" rel="noopener">джерело ↗</a></span></li>`).join('')}</ul>` : ''}`
+    : `<div class="note">По заводу ще не було підтверджених влучань. ${r.dist > far.dist ? `Він на ${sp(Math.round((r.dist - far.dist) / 50) * 50)} км далі, ніж найдальший уражений (${esc(far.name)}).` : ''}</div>`}
+  </article>`;
+}
+function renderCards() {
+  const list = REF.filter(filters[filterKey]).sort(sorters[sortKey]);
+  document.getElementById('rcards').innerHTML = list.slice(0, shown).map(rcard).join('');
+  const rest = list.length - shown, btn = document.getElementById('showMore');
+  btn.hidden = rest <= 0;
+  btn.textContent = `Показати ще ${Math.min(PAGE, rest)} з ${rest} ▾`;
+}
+const safeBig = untouched.filter(r => r.cap);
+document.getElementById('cardsIntro').innerHTML = `У переліку ${REF.length} заводів. По <b>${struck.length}</b> із них уже влучали — на них припадає ${dec(capStruck / TOTAL * 100, 0)}% потужностей переробки рф.
+  Ще не уражені ${safeBig.length} великі НПЗ (${dec(safeBig.reduce((a, r) => a + r.share, 0), 0)}% переробки) — усі за Уралом, за ${sp(Math.round(Math.min(...safeBig.map(r => r.dist)) / 50) * 50)}+ км від ДКУ.`;
+renderCards();
+document.getElementById('rcards').addEventListener('click', e => {
+  const b = e.target.closest('button.more'); if (!b) return;
+  const id = b.closest('.rc').dataset.id;
+  openCards.has(id) ? openCards.delete(id) : openCards.add(id); renderCards();
+});
+const segs = (id, attr, set) => document.getElementById(id).addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  set(b.dataset[attr]);
+  document.querySelectorAll(`#${id} button`).forEach(x => x.classList.toggle('on', x === b));
+  renderCards();
+});
+segs('sortSeg', 'k', v => sortKey = v);
+segs('filterSeg', 'f', v => { filterKey = v; shown = PAGE; });
+document.getElementById('showMore').addEventListener('click', () => { shown += PAGE; renderCards(); });
+
+// ================= КАРТА =================
+const heat = n => n === 0 ? '#2fbf71' : n < 3 ? '#e6a23c' : n < 8 ? '#ff7a2f' : n < 15 ? '#f0454f' : '#ff2d55';
+const map = L.map('map', { scrollWheelZoom: false }).setView([54, 52], 4);
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>', maxZoom: 10, className: 'dark-tiles',
+}).addTo(map);
+map.fitBounds(L.latLngBounds(struck.map(r => [r.lat, r.lon])).extend([50.45, 30.52]).pad(.05));
+// ДКУ з рф (точки, від яких рахуємо відстань)
+L.polyline(BORDER, { color: '#5ab0ff', weight: 2.5, opacity: .9 }).addTo(map).bindTooltip('Державний кордон України з рф', { sticky: true, className: 'ua-line-label' });
+let distLine = null;
+for (const r of [...REF].sort((a, b) => (b.cap || 1) - (a.cap || 1))) {
+  const rad = 4 + Math.sqrt(r.cap || 1) * 3;
+  const near = nearUA(r);
+  L.circleMarker([r.lat, r.lon], { radius: rad, color: heat(r.n), weight: 1.5, fillColor: heat(r.n), fillOpacity: r.n ? .55 : .2 })
+    .bindPopup(`<b>${esc(r.name)}</b><br><span class="m">${esc(r.owner)} · ${esc(r.region)}</span><br>
+      ${r.cap ? `${dec(r.cap, r.cap % 1 ? 1 : 0)} млн т/рік · ${dec(r.share)}% переробки рф<br>` : ''}
+      ${r.n ? `<b class="fire">${r.n} ${udar(r.n)}</b>, останній — ${dateUA(r.last)}` : '<b style="color:var(--good)">ще не уражений</b>'}<br>
+      <span class="m">≈${sp(Math.round(near.d / 10) * 10)} км від ДКУ по прямій</span>`)
+    .on('popupopen', () => {
+      distLine?.remove();
+      distLine = L.polyline([near.p, [r.lat, r.lon]], { color: '#e8ecf3', weight: 1.5, dashArray: '5 6', opacity: .85 })
+        .bindTooltip(`${sp(Math.round(near.d / 10) * 10)} км`, { permanent: true, direction: 'center', className: 'ua-line-label' }).addTo(map);
+    })
+    .on('popupclose', () => { distLine?.remove(); distLine = null; })
+    .addTo(map);
+}
+document.getElementById('mapLegend').innerHTML = [[0, 'не уражений'], [1, '1–2 удари'], [3, '3–7'], [8, '8–14'], [15, '15 і більше']]
+  .map(([n, t]) => `<span><i style="background:${heat(n)}"></i>${t}</span>`).join('') +
+  `<span><i style="background:#5ab0ff;border-radius:2px;height:3px;width:16px;vertical-align:3px"></i>ДКУ з рф</span>`;
+
+// ================= ДЖЕРЕЛА =================
+document.getElementById('sources').innerHTML = N.sources.map(s => `<li><a href="${s.url}" target="_blank" rel="noopener">${s.title}</a></li>`).join('') +
+  `<li>Загальна потужність переробки рф: ${N.russiaCapacityNote}. Потужність окремих заводів — проектна, округлено (Reuters, сайти компаній).</li>
+   <li>Відстань — по прямій від найближчої точки державного кордону України (Сумщина, Харківщина, Луганщина, Донеччина, Крим).</li>`;
+document.getElementById('footer').textContent = `Перемогіум · НПЗдець · дані станом на ${dateUA(asOf)}`;
+})();
+</script>
+<script src="assets/nav.js"></script>
+</body>
+</html>

@@ -53,6 +53,7 @@
   .pill { display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; border: 1px solid var(--border-2); border-radius: 999px; font-size: 12px; color: var(--text-2); background: var(--panel); }
   .pill .upd { color: var(--muted); font-family: var(--mono); }
   .brand-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 22px; }
+  header > .brand-row { grid-column: 1 / -1; }
   .logo { display: inline-flex; color: var(--text); text-decoration: none; }
   .logo svg { height: 26px; width: auto; display: block; }
   .logo:hover { color: #fff; }
@@ -189,12 +190,12 @@
     .kpi-val { font-size: 26px; }
   }
 </style>
+<link rel="stylesheet" href="assets/nav.css">
 </head>
 <body>
 <div class="wrap">
 
 <header>
-  <div>
     <div class="brand-row">
       <a class="logo" href="./" aria-label="Перемогіум — на головну"><!--logo:start--><svg viewBox="6.5 -76.7 903.9 78.4" aria-hidden="true" focusable="false"><path fill="currentColor" d="M6.50-75L87.80-75L87.80 0L64.50 0L64.50-54.40L29.80-54.40L29.80 0L6.50 0L6.50-75ZM129.20-45.70L170.30-45.70L170.30-29.30L129.20-29.30L127.40-18.60L173.80-18.60L173.80 0L102.70 0L108.30-37.50L102.70-75L173.30-75L173.30-56.40L127.40-56.40L129.20-45.70ZM189.10-75L232.00-75Q241.80-75 248.85-71.70Q255.90-68.40 259.60-62.45Q263.30-56.50 263.30-48.40L263.30-48.40Q263.30-40.40 259.60-34.40Q255.90-28.40 248.85-25.10Q241.80-21.80 232.00-21.80L232.00-21.80L212.40-21.80L212.40 0L189.10 0L189.10-75ZM212.40-56.60L212.40-40.20L230.50-40.20Q234.90-40.20 237.35-42.40Q239.80-44.60 239.80-48.40L239.80-48.40Q239.80-52.40 237.35-54.50Q234.90-56.60 230.50-56.60L230.50-56.60L212.40-56.60ZM300-45.70L341.10-45.70L341.10-29.30L300-29.30L298.20-18.60L344.60-18.60L344.60 0L273.50 0L279.10-37.50L273.50-75L344.10-75L344.10-56.40L298.20-56.40L300-45.70ZM436.50-75L472.50-75L472.50 0L450.30 0L450.30-54.70L427.80 0L404.60 0L382.00-54.60L382.00 0L359.90 0L359.90-75L395.80-75L416.20-23.10L436.50-75ZM531.40 1.70L531.40 1.70Q517.90 1.70 507.75-3.20Q497.60-8.10 491.95-16.90Q486.30-25.70 486.30-37.50L486.30-37.50Q486.30-49.30 491.95-58.10Q497.60-66.90 507.75-71.80Q517.90-76.70 531.40-76.70L531.40-76.70Q544.90-76.70 555.05-71.80Q565.20-66.90 570.85-58.10Q576.50-49.30 576.50-37.50L576.50-37.50Q576.50-25.70 570.85-16.90Q565.20-8.10 555.05-3.20Q544.90 1.70 531.40 1.70ZM531.40-19L531.40-19Q538.10-19 542.95-21.25Q547.80-23.50 550.40-27.65Q553-31.80 553-37.50L553-37.50Q553-43.20 550.40-47.35Q547.80-51.50 542.95-53.75Q538.10-56 531.40-56L531.40-56Q524.70-56 519.85-53.75Q515-51.50 512.40-47.35Q509.80-43.20 509.80-37.50L509.80-37.50Q509.80-31.80 512.40-27.65Q515-23.50 519.85-21.25Q524.70-19 531.40-19ZM590.40-75L648.90-75L648.90-54.30L613.70-54.30L613.70 0L590.40 0L590.40-75ZM661.40 0L661.40-75L684.70-75L684.70 0L661.40 0ZM744.60 0L719.50 0L728.90-16.50L695.30-75L720.90-75L741.70-38.50L762.30-75L787.40-75L744.60 0ZM874.40-75L910.40-75L910.40 0L888.20 0L888.20-54.70L865.70 0L842.50 0L819.90-54.60L819.90 0L797.80 0L797.80-75L833.70-75L854.10-23.10L874.40-75Z"/></svg><!--logo:end--></a>
       <span class="pill">🧪 Експеримент. Не є офіційним джерелом.</span>
@@ -202,8 +203,10 @@
         <a href="./" class="on" aria-current="page">2026 проти 2025</a>
         <a href="war.html">2026 проти всієї війни</a>
         <a href="calendar.html">Календар втрат</a>
+        <a href="npz.html">НПЗдець</a>
       </nav>
     </div>
+  <div>
     <h1>Велика картина війни</h1>
     <p class="sub">Новина — це один день, а тут — тренд за рік: 2025 проти 2026, на перевірених даних.</p>
   </div>
@@ -391,7 +394,7 @@ const PERIOD = `${MS[0].toLowerCase()}–${lastDay} ${MS[N - 1].toLowerCase()}`;
 document.getElementById('kpiMeta').textContent = `2026: ${PERIOD_LONG} (${daysW(pdays)}) · 2025: весь рік · порівнюємо в середньому за добу`;
 
 // ================= KPI =================
-function kpi({ label, badge, good, val, unit, a, b, fa, fb, human }) {
+function kpi({ label, badge, good, val, unit, a, b, fa, fb, human, more }) {
   const tot = a + b;
   return `<div class="panel">
     <div class="kpi-top"><div class="kpi-label">${label}</div><span class="badge ${good ? 'good' : 'bad'}">${badge}</span></div>
@@ -399,22 +402,23 @@ function kpi({ label, badge, good, val, unit, a, b, fa, fb, human }) {
     <div class="split"><i style="background:${C25};width:${a / tot * 100}%"></i><i style="background:${C26};width:${b / tot * 100}%"></i></div>
     <div class="kpi-foot"><span><i class="lg a"></i>${N25 === 12 ? '2025 рік' : Y25}: <b>${fa}</b></span><span><i class="lg b"></i>2026: <b>${fb}</b></span></div>
     <div class="kpi-human">${human}</div>
+    ${more ? `<a class="more" href="${more[0]}">${more[1]} →</a>` : ''}
   </div>`;
 }
 const terrLess = r26 < r25, persMore = pr26 >= pr25, priceUp = price26 >= price25;
 const ratioBadge = (r, more, less) => `${dec(r)}× ${r >= 1 ? more : less}`;
 document.getElementById('kpis').innerHTML = [
-  kpi({ label: 'Захоплена територія · разом', badge: (terrLess ? '−' : '+') + Math.round(Math.abs(pct(r25, r26))) + '% за добу', good: terrLess,
+  kpi({ more: ['war.html', 'Усі роки війни'], label: 'Захоплена територія · разом', badge: (terrLess ? '−' : '+') + Math.round(Math.abs(pct(r25, r26))) + '% за добу', good: terrLess,
         val: sp(t26), unit: 'км²', a: t25, b: t26, fa: sp(t25), fb: sp(t26),
         human: `За ${Y25} рік росія захопила ${sp(t25)} км². З початку 2026-го — ${sp(t26)} км²: ` + (terrLess
           ? `щодоби <b>${times(r25 / r26)} менше</b>.`
           : `щодоби <b>${times(r26 / r25)} більше</b>.`) }),
-  kpi({ label: 'Темп захоплення · на добу', badge: terrLess ? ratioBadge(r25 / r26, 'повільніше', '') : ratioBadge(r26 / r25, 'швидше', ''), good: terrLess,
+  kpi({ more: ['war.html', 'Темп за кожен рік війни'], label: 'Темп захоплення · на добу', badge: terrLess ? ratioBadge(r25 / r26, 'повільніше', '') : ratioBadge(r26 / r25, 'швидше', ''), good: terrLess,
         val: dec(r26, 2), unit: 'км²/добу', a: r25, b: r26, fa: dec(r25, 2), fb: dec(r26, 2),
         human: terrLess
           ? `Росія просувається <b>${times(r25 / r26)} повільніше</b>, ніж у 2025-му: ${dec(r26)} км² на добу проти ${dec(r25)}.`
           : `Росія просувається <b>${times(r26 / r25)} швидше</b>, ніж у 2025-му: ${dec(r26)} км² на добу проти ${dec(r25)}.` }),
-  kpi({ label: 'Втрати рф · особовий склад', badge: (persMore ? '+' : '−') + dec(Math.abs(pct(pr25, pr26))) + '% за добу', good: true,
+  kpi({ more: ['calendar.html', 'По днях у календарі'], label: 'Втрати рф · особовий склад', badge: (persMore ? '+' : '−') + dec(Math.abs(pct(pr25, pr26))) + '% за добу', good: true,
         val: sp(p26), unit: 'осіб', a: p25, b: p26, fa: sp(p25), fb: sp(p26),
         human: (() => {
           // останній день із даними у 2026 проти того самого дня 2025
@@ -426,7 +430,7 @@ document.getElementById('kpis').innerHTML = [
           return `Убиті та поранені. ` + (a != null && b != null
             ? `${dm} 2026-го — <b>${sp(b)}</b>, а того ж дня 2025-го — ${sp(a)} (<b>${b >= a ? '+' : '−'}${Math.round(Math.abs(pct(a, b)))}%</b>).` : '');
         })() }),
-  kpi({ label: 'Ціна 1 км² · для рф', badge: priceUp ? ratioBadge(price26 / price25, 'дорожче', '') : ratioBadge(price25 / price26, 'дешевше', ''), good: priceUp,
+  kpi({ more: ['war.html', 'Ціна за кожен рік війни'], label: 'Ціна 1 км² · для рф', badge: priceUp ? ratioBadge(price26 / price25, 'дорожче', '') : ratioBadge(price25 / price26, 'дешевше', ''), good: priceUp,
         val: sp(price26), unit: 'осіб/км²', a: price25, b: price26, fa: sp(price25), fb: sp(price26),
         human: `Скільки військових рф втрачає на кожен захоплений км². ` + (priceUp
           ? `Окупація 1 км² коштує їй <b>${times(price26 / price25)} дорожче, ніж у 2025-му</b>.`
@@ -662,5 +666,6 @@ document.getElementById('footer').textContent =
   `Перемогіум · прототип · дані згенеровано ${dateUA(D.generatedAt)}, ${new Date(D.generatedAt).toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })}`;
 })();
 </script>
+<script src="assets/nav.js"></script>
 </body>
 </html>
