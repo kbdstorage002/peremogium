@@ -5,6 +5,22 @@
   const nav = document.querySelector('nav.tabs');
   if (!nav) return;
 
+  // Вкладки «рік проти попереднього» будуються з років у даних (assets/years.js):
+  // у 2027-му з'явиться «2027 проти 2026», а «2026 проти 2025» залишиться поруч.
+  const Y = window.PEREMOGIUM_YEARS;
+  const home = nav.querySelector('a[href="./"]');
+  if (Y && home && Y.pairs.length) {
+    const onHome = home.classList.contains('on');
+    const sel = window.PEREMOGIUM_PAIR ?? null;            // яку пару показує головна (задає index.html)
+    home.insertAdjacentHTML('beforebegin', Y.pairs.map((y, i) => {
+      const on = onHome && y === sel;
+      return `<a href="${i === 0 ? './' : './?y=' + y}"${on ? ' class="on" aria-current="page"' : ''}>${y} проти ${y - 1}</a>`;
+    }).join(''));
+    home.remove();
+  }
+  const war = nav.querySelector('a[href="war.html"]');
+  if (Y && war) war.textContent = `${window.PEREMOGIUM_WAR_YEAR ?? Y.latest} проти всієї війни`;
+
   const bar = document.createElement('div');
   bar.className = 'stickybar';
   bar.setAttribute('aria-hidden', 'true'); // для читачів екрана вже є основне меню

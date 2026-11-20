@@ -10,6 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/d3-hierarchy@3.1.2/dist/d3-hierarchy.min.js"></script>
 <script src="data/data.js"></script>
+<script src="assets/years.js"></script>
 <style>
   :root {
     color-scheme: dark;
@@ -407,7 +408,7 @@ function renderYear() {
 const RYEARS = [...new Set([...allByDate.keys()].map(k => +k.slice(0, 4)))];
 const RPAL = { 2022: '#199e70', 2023: '#9085e9', 2024: '#d55181', 2025: '#3987e5', 2026: '#c98500' };
 const EXTRA = ['#0ca30c', '#e66767', '#5598e7', '#eb6834'];
-const ycol = y => RPAL[y] || EXTRA[(y - 2027) % EXTRA.length];
+const ycol = y => window.PEREMOGIUM_YEARS?.color(y) || RPAL[y] || EXTRA[(y - 2027) % EXTRA.length]; // спільні кольори років (assets/years.js)
 const RMAX = Math.max(...allByDate.values());
 // Щільна купка кіл для дати: площа кола ∝ втратам, роки в однаковому порядку.
 // (d3.packSiblings використовує поля x, y, r — тому рік зберігаємо як yr)

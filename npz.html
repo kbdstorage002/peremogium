@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="data/npz.js"></script>
+<script src="assets/years.js"></script>
 <style>
   :root {
     color-scheme: dark;
@@ -305,7 +306,9 @@ if (!N) {
 }
 
 // ================= ДОВІДНИКИ =================
-const YEARS = [2022, 2023, 2024, 2025, 2026], CUR = 2026;
+// Поточний рік — рік останньої перевірки даних; новий рік з'являється сам.
+const CUR = +window.NPZ_DATA.asOf.slice(0, 4);
+const YEARS = Array.from({ length: CUR - 2022 + 1 }, (_, i) => 2022 + i);
 const MS = ['січ','лют','бер','кві','тра','чер','лип','сер','вер','жов','лис','гру'];
 const MLOC = ['січні','лютому','березні','квітні','травні','червні','липні','серпні','вересні','жовтні','листопаді','грудні'];
 const MGEN = ['січня','лютого','березня','квітня','травня','червня','липня','серпня','вересня','жовтня','листопада','грудня'];
@@ -371,13 +374,15 @@ document.getElementById('kpis').innerHTML = [
       { y: 'all', lbl: 'усі', v: capStruck / TOTAL * 100 },
       { y: CUR, lbl: CUR, v: capStruck26 / TOTAL * 100 },
     ], v => dec(v, 0) + '%'),
-    human: `На ці заводи припадає <b>${dec(capStruck / TOTAL * 100, 0)}% потужностей нафтопереробки рф</b>. Лише у 2026-му під удар потрапили заводи з ${dec(capStruck26 / TOTAL * 100, 0)}% потужностей.`,
+    human: `На ці заводи припадає <b>${dec(capStruck / TOTAL * 100, 0)}% потужностей нафтопереробки рф</b>. Лише у ${CUR}-му під удар потрапили заводи з ${dec(capStruck26 / TOTAL * 100, 0)}% потужностей.`,
   }),
   card({
-    label: 'Ударів по НПЗ', badge: yearCount[CUR] >= Math.max(...YEARS.map(y => yearCount[y])) ? 'рекорд війни' : '',
+    label: 'Ударів по НПЗ', badge: yearCount[CUR] > Math.max(...YEARS.filter(y => y < CUR).map(y => yearCount[y])) ? 'рекорд війни' : '',
     val: N.strikes.length, unit: `з 2022 року`,
     body: bars(YEARS.map(y => ({ y, v: yearCount[y] })), v => v),
-    human: `Кампанія по-справжньому почалася у 2024-му. У ${CUR}-му вже <b>${yearCount[CUR]} ${udar(yearCount[CUR])}</b> — більше, ніж за будь-який рік до того.`,
+    human: `Кампанія по-справжньому почалася у 2024-му. ` + (yearCount[CUR] > Math.max(...YEARS.filter(y => y < CUR).map(y => yearCount[y]))
+      ? `У ${CUR}-му вже <b>${yearCount[CUR]} ${udar(yearCount[CUR])}</b> — більше, ніж за будь-який рік до того.`
+      : `У ${CUR}-му поки <b>${yearCount[CUR]} ${udar(yearCount[CUR])}</b>; за весь ${CUR - 1}-й було ${yearCount[CUR - 1]}.`),
   }),
   card({
     label: `Темп ${CUR} проти ${CUR - 1}`, badge: s25 ? `×${dec(s26 / s25)}` : '',
@@ -455,9 +460,11 @@ new Chart(document.getElementById('chB'), {
   },
 });
 const peakB = months.reduce((a, b) => b.cap > a.cap ? b : a);
-const avg = (y) => { const ms = months.filter(mo => mo.y === y && !mo.partial); return ms.reduce((a, mo) => a + mo.cap, 0) / ms.length / TOTAL * 100; };
+const avg = (y) => { const ms = months.filter(mo => mo.y === y && !mo.partial); return ms.length ? ms.reduce((a, mo) => a + mo.cap, 0) / ms.length / TOTAL * 100 : null; };
+// два останні роки, в яких уже є повні місяці (на початку січня поточний рік ще порожній)
+const [avgA, avgB] = YEARS.filter(y => avg(y) != null).slice(-2);
 document.getElementById('explainB').innerHTML = `<span class="lbl">Людською мовою</span>
-  Це не «скільки зупинено», а скільки переробки припадає на заводи, які за місяць хоча б раз отримали удар. У середньому за місяць 2025-го — ${dec(avg(2025), 0)}%, 2026-го — <b>${dec(avg(CUR), 0)}%</b>.
+  Це не «скільки зупинено», а скільки переробки припадає на заводи, які за місяць хоча б раз отримали удар. У середньому за місяць ${avgA}-го — ${dec(avg(avgA), 0)}%, ${avgB}-го — <b>${dec(avg(avgB), 0)}%</b>.
   Пік — у ${MLOC[peakB.m]} ${peakB.y}: під ударом були заводи з <b>${dec(peakB.cap / TOTAL * 100, 0)}%</b> усієї переробки рф.`;
 
 // ================= КАРТКИ ЗАВОДІВ =================
@@ -527,6 +534,8 @@ document.getElementById('showMore').addEventListener('click', () => { shown += P
 // ================= КАРТА =================
 const heat = n => n === 0 ? '#2fbf71' : n < 3 ? '#e6a23c' : n < 8 ? '#ff7a2f' : n < 15 ? '#f0454f' : '#ff2d55';
 const map = L.map('map', { scrollWheelZoom: false }).setView([54, 52], 4);
+// Попап завжди повністю видно і не перекрито кнопками масштабу (+/−) у лівому верхньому куті
+const POPUP = { autoPanPaddingTopLeft: L.point(60, 16), autoPanPaddingBottomRight: L.point(16, 16), maxWidth: Math.min(300, innerWidth - 110) };
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>', maxZoom: 10, className: 'dark-tiles',
 }).addTo(map);
@@ -541,7 +550,7 @@ for (const r of [...REF].sort((a, b) => (b.cap || 1) - (a.cap || 1))) {
     .bindPopup(`<b>${esc(r.name)}</b><br><span class="m">${esc(r.owner)} · ${esc(r.region)}</span><br>
       ${r.cap ? `${dec(r.cap, r.cap % 1 ? 1 : 0)} млн т/рік · ${dec(r.share)}% переробки рф<br>` : ''}
       ${r.n ? `<b class="fire">${r.n} ${udar(r.n)}</b>, останній — ${dateUA(r.last)}` : '<b style="color:var(--good)">ще не уражений</b>'}<br>
-      <span class="m">≈${sp(Math.round(near.d / 10) * 10)} км від ДКУ по прямій</span>`)
+      <span class="m">≈${sp(Math.round(near.d / 10) * 10)} км від ДКУ по прямій</span>`, POPUP)
     .on('popupopen', () => {
       distLine?.remove();
       distLine = L.polyline([near.p, [r.lat, r.lon]], { color: '#e8ecf3', weight: 1.5, dashArray: '5 6', opacity: .85 })

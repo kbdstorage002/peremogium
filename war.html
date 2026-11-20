@@ -10,12 +10,13 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="data/data.js"></script>
+<script src="assets/years.js"></script>
 <style>
   :root {
     color-scheme: dark;
     --bg: #080a0f; --panel: #0e121a; --panel-2: #131824; --border: #1d2433; --border-2: #273044;
     --text: #e8ecf3; --text-2: #a9b2c3; --muted: #6b7588; --accent: #5ab0ff;
-    --y2022: #199e70; --y2023: #9085e9; --y2024: #d55181; --y2025: #3987e5; --y2026: #c98500;
+    --y2022: #199e70; --y2023: #9085e9; --y2024: #d55181; --y2025: #3987e5; --y2026: #c98500; --cur: var(--y2026);
     --good: #2fbf71; --good-bg: rgba(47,191,113,.12); --bad: #f0616d; --bad-bg: rgba(240,97,109,.12);
     --warn: #e6a23c;
     --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -61,14 +62,14 @@
   .badge.good { color: var(--good); background: var(--good-bg); box-shadow: inset 0 0 0 1px rgba(47,191,113,.3); }
   .badge.bad { color: var(--bad); background: var(--bad-bg); box-shadow: inset 0 0 0 1px rgba(240,97,109,.3); }
   .kpi-val { font: 600 30px var(--mono); margin: 8px 0 10px; letter-spacing: -.02em; }
-  .kpi-val .v26 { color: #e3b14f; }
+  .kpi-val .v26 { color: color-mix(in srgb, var(--cur) 75%, #fff); }
   .kpi-val small { font: 400 13px Inter, sans-serif; color: var(--text-2); margin-left: 6px; letter-spacing: 0; }
   .ybars { display: grid; gap: 6px; }
   .yb { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; gap: 8px; align-items: center; font: 12px var(--mono); color: var(--text-2); }
   .yb .track { height: 8px; border-radius: 4px; background: rgba(255,255,255,.04); overflow: hidden; }
   .yb .fill { height: 100%; border-radius: 4px; }
   .yb b { color: var(--text); font-weight: 600; white-space: nowrap; }
-  .yb.cur b, .yb.cur span:first-child { color: #e3b14f; }
+  .yb.cur b, .yb.cur span:first-child { color: color-mix(in srgb, var(--cur) 75%, #fff); }
   .yb .lib { color: var(--good); font-weight: 600; }
   .yb .na { color: var(--muted); }
   .kpi-human { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border-2); font-size: 13px; color: var(--text-2); line-height: 1.45; }
@@ -92,8 +93,8 @@
   td:first-child { color: var(--text); font-weight: 600; }
   td .d { display: block; font: 11px Inter, sans-serif; color: var(--muted); }
   td.lib { color: var(--good); }
-  tr.cur td { background: rgba(201,133,0,.06); }
-  tr.cur td:first-child { color: #e3b14f; }
+  tr.cur td { background: color-mix(in srgb, var(--cur) 6%, transparent); }
+  tr.cur td:first-child { color: color-mix(in srgb, var(--cur) 75%, #fff); }
   .dotc { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; vertical-align: 1px; }
 
   /* Notes */
@@ -201,7 +202,17 @@ if (!D || !D.personnel.monthly[2022]) {
 }
 
 // ================= ДОВІДНИКИ =================
-const YEARS = [2022, 2023, 2024, 2025, 2026], CUR = 2026;
+// Роки — з даних (новий рік з'являється сам). Поточний — найновіший рік, за який уже є хоч день даних.
+const hasData = y => (D.personnel.monthly[y]?.length || D.personnel.partial?.[y]) && (D.territory.monthly[y]?.length || D.territory.partial?.[y]);
+const LATEST = Math.max(...D.years);
+const CUR = hasData(LATEST) ? LATEST : LATEST - 1;
+const YEARS = D.years.filter(y => y <= CUR);
+window.PEREMOGIUM_WAR_YEAR = CUR;
+document.documentElement.style.setProperty('--cur', window.PEREMOGIUM_YEARS?.color(CUR) || '#c98500');
+const PAIR_HREF = CUR === (window.PEREMOGIUM_YEARS?.pairs?.[0] ?? CUR) ? './' : './?y=' + CUR;
+document.title = `${CUR} проти всієї війни · Перемогіум`;
+document.querySelector('h1').textContent = `${CUR} проти всієї війни`;
+document.querySelector('section h2').textContent = `Яким за рахунком є ${CUR}-й`;
 const MS = ['Січ','Лют','Бер','Кві','Тра','Чер','Лип','Сер','Вер','Жов','Лис','Гру'];
 const MGEN = ['січня','лютого','березня','квітня','травня','червня','липня','серпня','вересня','жовтня','листопада','грудня'];
 const WAR_START = Date.UTC(2022, 1, 24);
@@ -245,17 +256,19 @@ for (const y of YEARS) {
   const g = sum(gm), lib = sum(lm);
   // втрати за ті самі місяці, за які є дані про захоплене (для «ціни» км²)
   const pSameG = sum(pm.map((v, m) => gm[m] == null ? 0 : v));
-  const oilY = y === CUR ? D.oilGas.value2026 : D.oilGasYears?.years?.[y];
+  // з початку року (oilGas) — для року, за який ще немає повного значення в oilGasYears; решта — повні роки
+  const OIL_CUR = D.oilGas.year === y && D.oilGasYears?.years?.[y] == null;
+  const oilY = OIL_CUR ? D.oilGas.value : D.oilGasYears?.years?.[y];
   // доходи бюджету — за календарні дні (а не з початку вторгнення)
   const calDays = n => Math.round((Date.UTC(y, n, 1) - Date.UTC(y, 0, 1)) / 864e5);
-  const oilDays = y === CUR ? calDays(D.oilGas.months) : calDays(12);
+  const oilDays = OIL_CUR ? calDays(D.oilGas.months) : calDays(12);
   Y[y] = {
     tm, pm, tdays, pdays, t, td, p, pd,
     tr: t / td,                                   // км² за добу (мінус — звільнено більше)
     pr: p / pd,                                   // втрати за добу
     g, lib,
     price: g > 0 ? pSameG / g : null,             // військових рф на 1 захоплений км²
-    oil: oilY, oilPerDay: oilY != null ? oilY * 1000 / oilDays : null, // млрд ₽ на добу
+    oil: oilY, oilPart: OIL_CUR, oilPerDay: oilY != null ? oilY * 1000 / oilDays : null, // млрд ₽ на добу
     tFrom: tm.findIndex(v => v != null), pFrom: pm.findIndex(v => v != null),
   };
 }
@@ -266,7 +279,7 @@ const prev = YEARS.filter(y => y !== CUR);
 document.getElementById('yearsLegend').innerHTML = YEARS.map(y => `<span><i style="background:${COLOR[y]}"></i>${y}${y === CUR ? ' (поточний)' : ''}</span>`).join('');
 const lastDay = HAS_P ? ppVals.length : new Date(Date.UTC(CUR, NF, 0)).getUTCDate();
 const lastMonth = HAS_P ? NF : NF - 1;
-document.getElementById('kpiMeta').textContent = `2026 — з 1 січня по ${lastDay} ${MGEN[lastMonth]} · 2022 — з 24 лютого · порівнюємо в середньому за добу`;
+document.getElementById('kpiMeta').textContent = `${CUR} — з 1 січня по ${lastDay} ${MGEN[lastMonth]} · 2022 — з 24 лютого · порівнюємо в середньому за добу`;
 
 // ================= КАРТКИ =================
 function bars(rows, fmtV, { lib = null } = {}) {
@@ -281,7 +294,7 @@ function bars(rows, fmtV, { lib = null } = {}) {
 function card({ label, badge, good, val, unit, barsHtml, human, more }) {
   return `<div class="panel">
     <div class="kpi-top"><div class="kpi-label">${label}</div>${badge ? `<span class="badge ${good ? 'good' : 'bad'}">${badge}</span>` : ''}</div>
-    <div class="kpi-val"><span class="v26">${val}</span><small>${unit} у 2026</small></div>
+    <div class="kpi-val"><span class="v26">${val}</span><small>${unit} у ${CUR}</small></div>
     ${barsHtml}
     <div class="kpi-human">${human}</div>
     ${more ? `<a class="more" href="${more[0]}">${more[1]} →</a>` : ''}
@@ -305,7 +318,7 @@ const oilRank = [...oilYears].sort((a, b) => Y[a].oilPerDay - Y[b].oilPerDay).in
 
 document.getElementById('kpis').innerHTML = [
   card({
-    more: ['./', '2026 проти 2025 детально'],
+    more: [PAIR_HREF, `${CUR} проти ${CUR - 1} детально`],
     label: 'Темп наступу рф · км² на добу',
     badge: slowestAdv ? 'найповільніший' : '', good: true,
     val: dec(C.tr, 2), unit: 'км²/добу',
@@ -338,12 +351,14 @@ document.getElementById('kpis').innerHTML = [
   }),
   card({
     label: 'Нафтогаз рф · млрд ₽ на добу',
-    badge: oilRank === 1 ? 'найменше за війну' : '', good: true,
-    val: dec(C.oilPerDay), unit: 'млрд ₽/добу',
+    badge: C.oilPerDay != null && oilRank === 1 ? 'найменше за війну' : '', good: true,
+    val: C.oilPerDay != null ? dec(C.oilPerDay) : '—', unit: 'млрд ₽/добу',
     barsHtml: bars(YEARS.map(y => ({ y, v: Y[y].oilPerDay })), v => dec(v)),
-    human: `Головне джерело грошей на війну. ` + (oilRank === 1
+    human: `Головне джерело грошей на війну. ` + (C.oilPerDay == null
+      ? `Мінфін рф ще не опублікував дані за ${CUR} рік (зазвичай — на початку наступного місяця).`
+      : oilRank === 1
       ? `<b>Найменше за всю війну</b>: ${times(Math.max(...oilYears.map(y => Y[y].oilPerDay)) / C.oilPerDay)} менше, ніж у найкращий для рф рік.`
-      : `${oilRank}-й найменший результат за роки війни.`) + ` 2026 — за ${D.oilGas.period}.`,
+      : `${oilRank}-й найменший результат за роки війни.`) + (C.oilPerDay != null && D.oilGas.year === CUR ? ` ${CUR} — за ${D.oilGas.period}.` : ''),
   }),
 ].join('');
 
@@ -389,7 +404,7 @@ const peakA = ptsA.reduce((a, b) => b.a > a.a ? b : a), lowA = ptsA.reduce((a, b
 document.getElementById('explainA').innerHTML = `<span class="lbl">Людською мовою</span>
   Найбільше окупації було ${labelA(peakA)} — ${sp(peakA.a)} км². Після звільнень (Харківщина, Херсон, контрнаступ 2023-го) площа впала до мінімуму — ${sp(lowA.a)} км² (${labelA(lowA)}).
   Відтоді росія повернула ${sp(D.territory.occupiedNow - lowA.a)} км² — це <b>${dec((D.territory.occupiedNow - lowA.a) / (peakA.a - lowA.a) * 100, 0)}% звільненого</b>.
-  За 2026 рік — лише ${sp(C.t)} км².`;
+  За ${CUR} рік — лише ${sp(C.t)} км².`;
 
 // B. Втрати за добу по місяцях, лінія на кожен рік
 new Chart(document.getElementById('chB'), {
@@ -415,7 +430,7 @@ let worst = null;
 for (const y of YEARS) Y[y].pm.forEach((v, m) => { if (v == null || !Y[y].pdays[m]) return; const r = v / Y[y].pdays[m]; if (!worst || r > worst.r) worst = { y, m, r }; });
 const MLOC = ['січні','лютому','березні','квітні','травні','червні','липні','серпні','вересні','жовтні','листопаді','грудні'];
 document.getElementById('explainB').innerHTML = `<span class="lbl">Людською мовою</span>` +
-  (persRank === 1 ? `Жовта лінія 2026 року — <b>найвища за всю війну</b>. ` : '') +
+  (persRank === 1 ? `Лінія ${CUR} року — <b>найвища за всю війну</b>. ` : '') +
   `Найважчий місяць для рф — у ${MLOC[worst.m]} ${worst.y}${worst.y === CUR && HAS_P && worst.m === NF ? ' (місяць ще триває)' : ''}: <b>${sp(worst.r)} осіб на добу</b>. У 2022-му в середньому було ${sp(Y[2022].pr)}.`;
 
 // ================= ТАБЛИЦЯ =================
@@ -432,7 +447,7 @@ for (const y of [...YEARS].reverse()) {
     <td>${sp(r.p)}</td>
     <td>${sp(r.pr)}</td>
     <td>${r.price != null ? sp(r.price) : '—'}</td>
-    <td>${r.oil != null ? dec(r.oil, 2) + ' трлн ₽' : '—'}${y === CUR ? `<span class="d">${D.oilGas.period}</span>` : ''}</td>
+    <td>${r.oil != null ? dec(r.oil, 2) + ' трлн ₽' : '—'}${Y[y].oilPart ? `<span class="d">${D.oilGas.period}</span>` : ''}</td>
   </tr>`;
 }
 document.getElementById('tbl').innerHTML = tb;
@@ -442,7 +457,7 @@ const note = (tag, ttl, text) => `<div class="panel"><div class="h-tag">⚠ ${ta
 document.getElementById('notes').innerHTML = [
   note('2022 рік', 'Територія — лише з травня', `Архів карти DeepState починається у квітні 2022. Перші тижні вторгнення, коли росія захопила найбільше, у підрахунок не потрапили. Зате видно звільнення Харківщини й Херсона. Карта 2022 року була менш детальною, тож «захоплене» тих місяців — приблизне.`),
   note('Звільнення', '2022 і 2023 — у плюс для України', `У ці роки Україна звільнила більше, ніж росія захопила, тому «темп наступу» для них не рахуємо. «Ціна км²» рахується від того, що рф захопила, — звільнене не віднімаємо.`),
-  note('Дані', 'Неповний 2026 рік', `2026 ще триває, тому всі порівняння — в середньому за добу. Втрати рф — оцінка Генштабу ЗСУ; методика однакова для всіх років.`),
+  note('Дані', 'Неповний ' + CUR + ' рік', `${CUR} ще триває, тому всі порівняння — в середньому за добу. Втрати рф — оцінка Генштабу ЗСУ; методика однакова для всіх років.`),
 ].join('');
 
 // ================= ДЖЕРЕЛА =================
@@ -450,8 +465,8 @@ const og = D.oilGasYears?.sources || [];
 document.getElementById('sources').innerHTML = `
   <li><b>Втрати рф</b> — щоденні зведення <a href="https://www.facebook.com/GeneralStaff.ua" target="_blank" rel="noopener">Генштабу ЗСУ</a>, архів <a href="https://russianwarship.rip/" target="_blank" rel="noopener">russianwarship.rip</a>, з 24 лютого 2022 до ${dateUA(D.personnel.asOf)}.</li>
   <li><b>Територія</b> — знімки карти <a href="https://deepstatemap.live/" target="_blank" rel="noopener">DeepState</a> на 1-ше число кожного місяця, з травня 2022. Рахуємо окуповане з 2022 року разом із Кримом і ОРДЛО; жартівливі позначки на карті (Курили тощо) не враховуємо. «Захопила» і «звільнила» рахуємо, накладаючи сусідні знімки карти один на одного.</li>
-  <li><b>Нафтогазові доходи рф</b> — Мінфін рф через ${og.map(s => `<a href="${s.url}" target="_blank" rel="noopener">${s.title}</a>`).join(', ')}; 2026 — ${D.oilGas.sources.map(s => `<a href="${s.url}" target="_blank" rel="noopener">${s.title}</a>`).join(', ')}. ${D.oilGasYears?.notes?.[2022] ? '2022: ' + D.oilGasYears.notes[2022] + '.' : ''}</li>`;
-document.getElementById('footer').textContent = `Перемогіум · 2026 проти всієї війни · дані оновлено ${dateUA(D.generatedAt)}`;
+  <li><b>Нафтогазові доходи рф</b> — Мінфін рф через ${og.map(s => `<a href="${s.url}" target="_blank" rel="noopener">${s.title}</a>`).join(', ')}; ${D.oilGas.year} — ${D.oilGas.sources.map(s => `<a href="${s.url}" target="_blank" rel="noopener">${s.title}</a>`).join(', ')}. ${D.oilGasYears?.notes?.[2022] ? '2022: ' + D.oilGasYears.notes[2022] + '.' : ''}</li>`;
+document.getElementById('footer').textContent = `Перемогіум · ${CUR} проти всієї війни · дані оновлено ${dateUA(D.generatedAt)}`;
 })();
 </script>
 <script src="assets/nav.js"></script>

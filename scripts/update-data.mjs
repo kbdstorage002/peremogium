@@ -17,7 +17,10 @@ import * as turf from '@turf/turf';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DATA = path.join(ROOT, 'data');
 const CACHE = path.join(DATA, 'cache', 'deepstate');
-const YEARS = [2022, 2023, 2024, 2025, 2026]; // уся повномасштабна війна
+// Уся повномасштабна війна: з 2022-го до поточного року (новий рік додається сам 1 січня).
+// Дата — за Києвом (UTC+2), щоб у ніч на 1 січня рік не «відставав».
+const THIS_YEAR = new Date(Date.now() + 2 * 3600e3).getUTCFullYear();
+const YEARS = Array.from({ length: THIS_YEAR - 2022 + 1 }, (_, i) => 2022 + i);
 const DAILY_FROM = '2022-02-25';               // щоденний ряд (календар втрат): з першого зведення Генштабу
 const UA = 'Mozilla/5.0 (compatible; peremogium-updater/1.0)';
 
@@ -272,8 +275,10 @@ async function main() {
   // Невелика самоперевірка: щоб збій джерела не зіпсував сторінку.
   const problems = [];
   for (const y of YEARS) {
-    if (!data.personnel.monthly[y]?.some(v => v != null)) problems.push(`немає втрат за ${y}`);
-    if (!data.territory.monthly[y]?.some(v => v != null)) problems.push(`немає території за ${y}`);
+    // Поточний рік на початку січня ще не має жодного повного місяця — тоді досить неповного.
+    const ok = (src) => src.monthly[y]?.some(v => v != null) || (y === THIS_YEAR && (src.partial?.[y] || !src.monthly[y]?.length));
+    if (!ok(data.personnel)) problems.push(`немає втрат за ${y}`);
+    if (!ok(data.territory)) problems.push(`немає території за ${y}`);
   }
   if (data.territory.occupiedNow < 100000 || data.territory.occupiedNow > 140000) problems.push(`дивна загальна площа: ${data.territory.occupiedNow}`);
   if (problems.length) throw new Error('Дані не пройшли перевірку: ' + problems.join('; '));
