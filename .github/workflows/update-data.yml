@@ -8,6 +8,7 @@ on:
     branches: [main]
     paths:                  # зміни дизайну чи даних одразу йдуть на сайт
       - 'index.html'
+      - 'year.html'
       - 'calendar.html'
       - 'war.html'
       - 'npz.html'
@@ -65,7 +66,7 @@ jobs:
           cp data/data.js data/data.json data/npz.js dist/data/
           cp -r assets dist/
           # Мітка версії, щоб браузери не показували вчорашні цифри з кешу
-          for page in index.html calendar.html war.html npz.html; do
+          for page in index.html year.html calendar.html war.html npz.html; do
             sed -e "s#data/data.js\"#data/data.js?v=$(date -u +%Y%m%d%H%M)\"#" -e "s#data/npz.js\"#data/npz.js?v=$(date -u +%Y%m%d%H%M)\"#" "$page" > "dist/$page"
           done
           find dist -type f

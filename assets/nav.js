@@ -8,13 +8,13 @@
   // Вкладки «рік проти попереднього» будуються з років у даних (assets/years.js):
   // у 2027-му з'явиться «2027 проти 2026», а «2026 проти 2025» залишиться поруч.
   const Y = window.PEREMOGIUM_YEARS;
-  const home = nav.querySelector('a[href="./"]');
+  const home = nav.querySelector('a[href="year.html"]');
   if (Y && home && Y.pairs.length) {
     const onHome = home.classList.contains('on');
     const sel = window.PEREMOGIUM_PAIR ?? null;            // яку пару показує головна (задає index.html)
     home.insertAdjacentHTML('beforebegin', Y.pairs.map((y, i) => {
       const on = onHome && y === sel;
-      return `<a href="${i === 0 ? './' : './?y=' + y}"${on ? ' class="on" aria-current="page"' : ''}>${y} проти ${y - 1}</a>`;
+      return `<a href="${i === 0 ? 'year.html' : 'year.html?y=' + y}"${on ? ' class="on" aria-current="page"' : ''}>${y} проти ${y - 1}</a>`;
     }).join(''));
     home.remove();
   }

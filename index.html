@@ -4,12 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Перемогіум</title>
-<meta name="description" content="Велика картина війни в цифрах: 2025 проти 2026. Офіційні дані та OSINT.">
+<meta name="description" content="Велика картина війни в цифрах: окупована площа, темп наступу, ціна кілометра для рф, втрати, удари по НПЗ.">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<script>
+  // Старі посилання «./?y=2026» тепер ведуть на сторінку порівняння років
+  if (new URLSearchParams(location.search).has('y')) location.replace('year.html' + location.search);
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="data/data.js"></script>
+<script src="data/npz.js"></script>
 <script src="assets/years.js"></script>
 <style>
   :root {
@@ -23,15 +27,13 @@
     --text-2: #a9b2c3;
     --muted: #6b7588;
     --accent: #5ab0ff;
-    --y2025: #3987e5;
-    --y2026: #c98500;
-    --prev: var(--y2025); --cur: var(--y2026);
+    --prev: #3987e5; --cur: #c98500;
     --good: #2fbf71;
     --good-bg: rgba(47,191,113,.12);
     --bad: #f0616d;
-    --bad-bg: rgba(240,97,109,.12);
     --warn: #e6a23c;
-    --warn-bg: rgba(230,162,60,.10);
+    --fire: #ff7a3d;
+    --occ: #f0616d;
     --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
     --r: 14px;
   }
@@ -48,148 +50,95 @@
     min-height: 100vh;
   }
   .wrap { max-width: 1240px; margin: 0 auto; padding: 0 24px; }
-  .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  a { color: inherit; text-decoration: none; }
 
-  /* ---------- Header ---------- */
-  header { padding: 36px 0 28px; border-bottom: 1px solid var(--border); display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: end; }
-  .pill { display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; border: 1px solid var(--border-2); border-radius: 999px; font-size: 12px; color: var(--text-2); background: var(--panel); }
-  .pill .upd { color: var(--muted); font-family: var(--mono); }
-  .brand-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 22px; }
-  header > .brand-row { grid-column: 1 / -1; }
-  .logo { display: inline-flex; color: var(--text); text-decoration: none; }
+  header { padding: 36px 0 0; }
+  .logo { display: inline-flex; color: var(--text); }
   .logo svg { height: 26px; width: auto; display: block; }
   .logo:hover { color: #fff; }
-  nav.tabs { margin-left: auto; display: inline-flex; padding: 3px; background: var(--panel); border: 1px solid var(--border-2); border-radius: 10px; }
-  nav.tabs a { font: 500 13px Inter, sans-serif; color: var(--text-2); text-decoration: none; padding: 7px 13px; border-radius: 7px; }
+  nav.tabs a { font: 500 13px Inter, sans-serif; color: var(--text-2); padding: 7px 13px; border-radius: 7px; }
   nav.tabs a.on { background: var(--panel-2); color: var(--text); box-shadow: inset 0 0 0 1px var(--border-2); }
   nav.tabs a:hover { color: var(--text); }
-  @media (max-width: 680px) { nav.tabs { margin-left: 0; } }
-  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--good); box-shadow: 0 0 8px var(--good); }
-  h1 { font-size: clamp(26px, 3.4vw, 36px); line-height: 1.2; margin: 14px 0 10px; font-weight: 700; letter-spacing: -.015em; }
-  .sub { color: var(--text-2); max-width: 680px; margin: 0; }
-  .controls { display: flex; flex-direction: column; gap: 10px; align-items: flex-end; }
-  .row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
-  .seg { display: inline-flex; padding: 3px; background: var(--panel); border: 1px solid var(--border-2); border-radius: 10px; }
-  .seg button, .btn { font: 500 13px Inter, sans-serif; color: var(--text-2); background: none; border: 0; padding: 7px 13px; border-radius: 7px; cursor: pointer; }
-  .seg button.on { background: var(--panel-2); color: var(--text); box-shadow: inset 0 0 0 1px var(--border-2); }
-  .btn { border: 1px solid var(--border-2); background: var(--panel); border-radius: 10px; display: inline-flex; gap: 8px; align-items: center; }
-  .btn:hover, .seg button:hover { color: var(--text); }
-  .btn .dot { background: var(--muted); box-shadow: none; }
-  .btn.on .dot { background: var(--good); box-shadow: 0 0 8px var(--good); }
 
-  /* ---------- Sections ---------- */
-  section { padding: 34px 0 6px; }
-  .sec-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
-  .eyebrow { font: 500 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
-  h2 { font-size: 21px; margin: 6px 0 0; font-weight: 650; letter-spacing: -.01em; }
-  .sec-meta { font-size: 12px; color: var(--muted); }
+  .panel { background: linear-gradient(180deg, var(--panel-2), var(--panel)); border: 1px solid var(--border); border-radius: var(--r); padding: 20px 22px; }
+  .tag { font: 500 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .go { font: 500 12px Inter, sans-serif; color: #8cbcf3; white-space: nowrap; }
+  a:hover .go { color: #b7d8fb; }
+  .badge { font: 600 12px var(--mono); padding: 3px 8px; border-radius: 7px; white-space: nowrap; color: var(--good); background: var(--good-bg); box-shadow: inset 0 0 0 1px rgba(47,191,113,.3); }
+  .badge.bad { color: var(--bad); background: rgba(240,97,109,.12); box-shadow: inset 0 0 0 1px rgba(240,97,109,.3); }
+  .num { font: 600 34px var(--mono); letter-spacing: -.02em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .num small { font: 400 13px Inter, sans-serif; color: var(--text-2); margin-left: 6px; letter-spacing: 0; }
+  .line { font-size: 14px; color: var(--text-2); line-height: 1.5; margin: 0; }
+  .line b { color: var(--text); font-weight: 600; }
 
-  .panel { background: linear-gradient(180deg, var(--panel-2), var(--panel)); border: 1px solid var(--border); border-radius: var(--r); padding: 18px 20px; }
+  /* ---------- Головний графік ---------- */
+  .hero { margin: 26px 0 14px; padding: 24px 26px 18px; }
+  .hero-top { display: flex; justify-content: space-between; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
+  .hero h1 { font-size: clamp(22px, 2.8vw, 30px); line-height: 1.2; margin: 6px 0 0; font-weight: 700; letter-spacing: -.015em; max-width: 720px; }
+  .hero h1 em { font-style: normal; color: var(--good); }
+  .hero .num { text-align: right; color: color-mix(in srgb, var(--occ) 70%, #fff); }
+  .hero .num small { display: block; margin: 4px 0 0; text-align: right; }
+  .big-viz { position: relative; height: 230px; margin-top: 18px; }
 
-  /* ---------- KPI ---------- */
-  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
-  .kpi-top { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; min-height: 34px; }
-  .kpi-label { font: 500 11px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--text-2); }
-  .badge { font: 600 12px var(--mono); padding: 3px 8px; border-radius: 7px; white-space: nowrap; }
-  .badge.good { color: var(--good); background: var(--good-bg); box-shadow: inset 0 0 0 1px rgba(47,191,113,.3); }
-  .badge.bad  { color: var(--bad);  background: var(--bad-bg);  box-shadow: inset 0 0 0 1px rgba(240,97,109,.3); }
-  .kpi-val { font: 600 30px var(--mono); margin: 8px 0 2px; letter-spacing: -.02em; }
-  .kpi-val .v26 { color: color-mix(in srgb, var(--cur) 75%, #fff); }
-  .kpi-val small { font: 400 13px Inter, sans-serif; color: var(--text-2); margin-left: 6px; letter-spacing: 0; }
-  .split { display: flex; gap: 3px; height: 5px; margin: 12px 0 10px; }
-  .split i { border-radius: 3px; display: block; }
-  .kpi-foot { display: flex; justify-content: space-between; gap: 8px; white-space: nowrap; font: 12px var(--mono); color: var(--text-2); }
-  .kpi-foot b { color: var(--text); font-weight: 600; }
-  .lg { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
-  .lg.a { background: var(--prev); } .lg.b { background: var(--cur); }
-  .kpi-human { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border-2); font-size: 13px; color: var(--text-2); line-height: 1.45; }
+  /* ---------- Чотири картки-розділи ---------- */
+  .cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  a.card { display: flex; flex-direction: column; gap: 10px; transition: border-color .2s, transform .2s; }
+  a.card:hover { border-color: #34405a; transform: translateY(-2px); }
+  .card-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .card-num { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .card .num { color: color-mix(in srgb, var(--cur) 78%, #fff); }
+  .viz { position: relative; height: 140px; }
+  svg { display: block; width: 100%; height: 100%; overflow: visible; }
+  .axis { font: 10px var(--mono); fill: var(--muted); }
+  .vlbl { font: 600 11px var(--mono); fill: var(--text-2); }
+  .key { display: flex; gap: 14px; flex-wrap: wrap; font: 11px var(--mono); color: var(--muted); }
+  .key i { display: inline-block; width: 12px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: 2px; }
 
-  /* ---------- Charts ---------- */
-  .charts { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
-  .charts > *, .kpis > *, .insights > *, .honest > * { min-width: 0; }
-  .ch-title { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 15px; }
-  .ch-title .sq { width: 9px; height: 9px; border-radius: 3px; background: var(--accent); }
-  .ch-sub { font-size: 12px; color: var(--muted); margin: 3px 0 10px; }
-  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
-  .chip { font: 12px var(--mono); padding: 3px 8px; border-radius: 6px; background: var(--panel-2); border: 1px solid var(--border-2); color: var(--text-2); }
-  .chip.a { color: color-mix(in srgb, var(--prev) 60%, #fff); } .chip.b { color: color-mix(in srgb, var(--cur) 75%, #fff); }
-  .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--text-2); margin-bottom: 6px; }
-  .legend span { display: inline-flex; align-items: center; gap: 6px; }
-  .legend .ln { width: 16px; height: 0; border-top: 2px solid; }
-  .legend .ln.d { border-top-style: dashed; }
-  .legend .bx { width: 10px; height: 10px; border-radius: 3px; }
-  .chart-box { position: relative; height: 300px; }
-  .ch-foot { overflow-wrap: anywhere; margin-top: 10px; font: 12px var(--mono); color: var(--muted); line-height: 1.7; }
-  .explain { margin-top: 12px; padding: 12px 14px; border-radius: 10px; background: rgba(90,176,255,.06); border: 1px solid rgba(90,176,255,.18); font-size: 13.5px; color: var(--text-2); }
-  .explain b { color: var(--text); font-weight: 600; }
-  .explain .lbl { font: 600 11px var(--mono); letter-spacing: .08em; color: var(--accent); text-transform: uppercase; display: block; margin-bottom: 4px; }
+  /* ---------- Цифра дня і «Чесно» ---------- */
+  .strip { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 14px; margin-top: 14px; }
+  .fact { display: flex; gap: 18px; align-items: center; border-color: rgba(201,133,0,.3); background: linear-gradient(120deg, rgba(201,133,0,.10), var(--panel) 60%); }
+  .fact .num { color: color-mix(in srgb, var(--cur) 80%, #fff); white-space: nowrap; }
+  .fact .line { flex: 1; color: var(--text); }
+  .btn { font: 500 12px Inter, sans-serif; color: var(--text-2); background: var(--panel); border: 1px solid var(--border-2); border-radius: 9px; padding: 7px 12px; cursor: pointer; white-space: nowrap; }
+  .btn:hover { color: var(--text); }
+  .btn.ok { color: var(--good); border-color: rgba(47,191,113,.4); }
+  .honest { border-color: rgba(230,162,60,.28); display: flex; flex-direction: column; justify-content: center; gap: 4px; }
+  .honest .tag { color: var(--warn); }
 
-  /* ---------- Insights ---------- */
-  .insights { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
-  .ins-head { display: flex; align-items: center; gap: 10px; font-weight: 600; margin-bottom: 12px; }
-  .num { font: 600 11px var(--mono); padding: 3px 7px; border-radius: 6px; }
-  .num.c1 { color: #e3b14f; background: rgba(201,133,0,.15); }
-  .num.c2 { color: var(--good); background: var(--good-bg); }
-  .num.c3 { color: var(--bad); background: var(--bad-bg); }
-  .num.c4 { color: var(--accent); background: rgba(90,176,255,.12); }
-  .kv { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--text-2); }
-  .kv:last-of-type { border-bottom: 0; }
-  .kv b { font: 600 13px var(--mono); color: var(--text); white-space: nowrap; }
-  .kv b.g { color: var(--good); } .kv b.r { color: var(--bad); } .kv b.a { color: color-mix(in srgb, var(--prev) 60%, #fff); } .kv b.o { color: color-mix(in srgb, var(--cur) 75%, #fff); }
-  .callout { margin-top: 12px; padding: 10px 12px; border-radius: 9px; font-size: 13px; line-height: 1.45; display: flex; gap: 8px; }
-  .callout::before { content: "→"; font-family: var(--mono); }
-  .callout.c1 { background: rgba(201,133,0,.08); border: 1px solid rgba(201,133,0,.25); color: #e9cf9a; }
-  .callout.c2 { background: var(--good-bg); border: 1px solid rgba(47,191,113,.25); color: #a6e3c2; }
-  .callout.c3 { background: var(--bad-bg); border: 1px solid rgba(240,97,109,.25); color: #f4b8bd; }
-  .callout.c4 { background: rgba(90,176,255,.07); border: 1px solid rgba(90,176,255,.22); color: #b7d8fb; }
-
-  /* ---------- Honest ---------- */
-  .honest { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
-  .honest .panel { border-color: rgba(230,162,60,.25); }
-  .h-tag { font: 600 11px var(--mono); letter-spacing: .08em; color: var(--warn); text-transform: uppercase; }
-  .honest h3 { font-size: 15px; margin: 8px 0 6px; }
-  .honest p { margin: 0; font-size: 13px; color: var(--text-2); }
-  .honest .fig { font: 600 20px var(--mono); color: var(--text); margin: 10px 0 0; }
-
-  /* ---------- Table ---------- */
-  .tbl-scroll { overflow-x: auto; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th { font: 500 11px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); text-align: right; padding: 10px 12px; border-bottom: 1px solid var(--border-2); white-space: nowrap; }
-  td { padding: 11px 12px; text-align: right; border-bottom: 1px solid var(--border); font-family: var(--mono); white-space: nowrap; color: var(--text-2); }
-  th:first-child, td:first-child { text-align: left; font-family: Inter, sans-serif; }
-  td:first-child { color: var(--text); font-weight: 500; }
-  td .d { font-size: 11px; color: var(--muted); margin-left: 4px; }
-  td.g { color: var(--good); } td.r { color: var(--bad); } td.a { color: color-mix(in srgb, var(--prev) 60%, #fff); } td.o { color: color-mix(in srgb, var(--cur) 75%, #fff); }
-  tr.hl td { background: rgba(255,255,255,.02); }
-  #statTbl td { font-size: 14px; padding: 13px 12px; }
-  #statTbl td:first-child { white-space: normal; }
-  #statTbl .hint { display: block; font-size: 12px; font-weight: 400; color: var(--muted); margin-top: 2px; }
-  #statTbl td.chg { font-family: Inter, sans-serif; font-weight: 600; }
-  .honest .fig small { display: block; font: 500 13px var(--mono); color: var(--muted); margin-top: 4px; }
-  details { margin-top: 14px; }
-  summary { cursor: pointer; display: inline-flex; gap: 8px; font-size: 13px; color: var(--text-2); padding: 8px 12px; border: 1px solid var(--border-2); border-radius: 9px; list-style: none; }
-  summary::-webkit-details-marker { display: none; }
-  summary::before { content: "▸"; }
-  details[open] summary::before { content: "▾"; }
-
-  .sources ol { margin: 0; padding-left: 20px; color: var(--text-2); font-size: 13px; }
-  .sources li { margin: 7px 0; }
-  .sources a { color: #8cbcf3; text-decoration: none; border-bottom: 1px solid rgba(140,188,243,.3); }
-  footer { padding: 30px 0 50px; color: var(--muted); font: 12px var(--mono); border-top: 1px solid var(--border); margin-top: 34px; }
+  footer { padding: 26px 0 44px; color: var(--muted); font: 12px var(--mono); margin-top: 30px; border-top: 1px solid var(--border); }
   .err { margin: 40px 0; padding: 20px; border: 1px solid var(--bad); border-radius: var(--r); color: var(--bad); }
 
-  @media (max-width: 1050px) {
-    .kpis, .insights, .honest { grid-template-columns: 1fr 1fr; }
-    .charts { grid-template-columns: minmax(0, 1fr); }
+  /* ---------- Анімації: стартують, коли блок потрапляє в поле зору (.in) ---------- */
+  .wipe { transform: scaleX(0); transform-origin: 0 0; transition: transform 1.8s cubic-bezier(.45,.05,.25,1); }
+  .in .wipe { transform: scaleX(1); }
+  .in .wipe.d2 { transition-delay: .35s; }
+  .bar { transform: scaleY(0); transform-box: fill-box; transform-origin: 50% 100%; transition: transform .7s cubic-bezier(.3,1.3,.5,1); transition-delay: calc(var(--i) * 60ms); }
+  .in .bar { transform: scaleY(1); }
+  .fadein { opacity: 0; transition: opacity .5s; transition-delay: calc(.8s + var(--i, 0) * 60ms); }
+  .in .fadein { opacity: 1; }
+  .heat { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 1fr); gap: 3px; height: 100%; }
+  .heat i { border-radius: 3px; background: var(--c); opacity: 0; transform: scale(.4); transition: opacity .4s, transform .4s; transition-delay: calc(var(--i) * 12ms); }
+  .heat i.empty { background: rgba(255,255,255,.03); }
+  .in .heat i { opacity: var(--o, 1); transform: scale(1); }
+  .heat i.max { box-shadow: 0 0 0 1.5px #fff; }
+  .pulse { transform-box: fill-box; transform-origin: center; }
+  .in .pulse { animation: pulse 2.4s ease-out 1.6s infinite; }
+  @keyframes pulse { 0% { transform: scale(1); opacity: .9; } 70%, 100% { transform: scale(3.2); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) {
+    .wipe, .bar, .fadein, .heat i { transition: none !important; }
+    .in .pulse { animation: none; }
   }
-  @media (max-width: 680px) {
+
+  @media (max-width: 860px) {
+    .cards, .strip { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 560px) {
     .wrap { padding: 0 16px; }
-    header { grid-template-columns: 1fr; }
-    .controls { align-items: flex-start; }
-    .row { justify-content: flex-start; }
-    .kpis, .insights, .honest { grid-template-columns: 1fr; }
-    .chart-box { height: 260px; }
-    .kpi-val { font-size: 26px; }
+    .hero { padding: 18px 16px 14px; }
+    .hero .num, .hero .num small { text-align: left; }
+    .big-viz { height: 190px; }
+    .fact { flex-wrap: wrap; }
+    .num { font-size: 28px; }
   }
 </style>
 <link rel="stylesheet" href="assets/nav.css">
@@ -198,500 +147,270 @@
 <div class="wrap">
 
 <header>
-    <div class="brand-row">
-      <a class="logo" href="./" aria-label="Перемогіум — на головну"><!--logo:start--><svg viewBox="6.5 -76.7 903.9 78.4" aria-hidden="true" focusable="false"><path fill="currentColor" d="M6.50-75L87.80-75L87.80 0L64.50 0L64.50-54.40L29.80-54.40L29.80 0L6.50 0L6.50-75ZM129.20-45.70L170.30-45.70L170.30-29.30L129.20-29.30L127.40-18.60L173.80-18.60L173.80 0L102.70 0L108.30-37.50L102.70-75L173.30-75L173.30-56.40L127.40-56.40L129.20-45.70ZM189.10-75L232.00-75Q241.80-75 248.85-71.70Q255.90-68.40 259.60-62.45Q263.30-56.50 263.30-48.40L263.30-48.40Q263.30-40.40 259.60-34.40Q255.90-28.40 248.85-25.10Q241.80-21.80 232.00-21.80L232.00-21.80L212.40-21.80L212.40 0L189.10 0L189.10-75ZM212.40-56.60L212.40-40.20L230.50-40.20Q234.90-40.20 237.35-42.40Q239.80-44.60 239.80-48.40L239.80-48.40Q239.80-52.40 237.35-54.50Q234.90-56.60 230.50-56.60L230.50-56.60L212.40-56.60ZM300-45.70L341.10-45.70L341.10-29.30L300-29.30L298.20-18.60L344.60-18.60L344.60 0L273.50 0L279.10-37.50L273.50-75L344.10-75L344.10-56.40L298.20-56.40L300-45.70ZM436.50-75L472.50-75L472.50 0L450.30 0L450.30-54.70L427.80 0L404.60 0L382.00-54.60L382.00 0L359.90 0L359.90-75L395.80-75L416.20-23.10L436.50-75ZM531.40 1.70L531.40 1.70Q517.90 1.70 507.75-3.20Q497.60-8.10 491.95-16.90Q486.30-25.70 486.30-37.50L486.30-37.50Q486.30-49.30 491.95-58.10Q497.60-66.90 507.75-71.80Q517.90-76.70 531.40-76.70L531.40-76.70Q544.90-76.70 555.05-71.80Q565.20-66.90 570.85-58.10Q576.50-49.30 576.50-37.50L576.50-37.50Q576.50-25.70 570.85-16.90Q565.20-8.10 555.05-3.20Q544.90 1.70 531.40 1.70ZM531.40-19L531.40-19Q538.10-19 542.95-21.25Q547.80-23.50 550.40-27.65Q553-31.80 553-37.50L553-37.50Q553-43.20 550.40-47.35Q547.80-51.50 542.95-53.75Q538.10-56 531.40-56L531.40-56Q524.70-56 519.85-53.75Q515-51.50 512.40-47.35Q509.80-43.20 509.80-37.50L509.80-37.50Q509.80-31.80 512.40-27.65Q515-23.50 519.85-21.25Q524.70-19 531.40-19ZM590.40-75L648.90-75L648.90-54.30L613.70-54.30L613.70 0L590.40 0L590.40-75ZM661.40 0L661.40-75L684.70-75L684.70 0L661.40 0ZM744.60 0L719.50 0L728.90-16.50L695.30-75L720.90-75L741.70-38.50L762.30-75L787.40-75L744.60 0ZM874.40-75L910.40-75L910.40 0L888.20 0L888.20-54.70L865.70 0L842.50 0L819.90-54.60L819.90 0L797.80 0L797.80-75L833.70-75L854.10-23.10L874.40-75Z"/></svg><!--logo:end--></a>
-      <span class="pill">🧪 Експеримент. Не є офіційним джерелом.</span>
-      <nav class="tabs" aria-label="Розділи">
-        <a href="./" class="on" aria-current="page">2026 проти 2025</a>
-        <a href="war.html">2026 проти всієї війни</a>
-        <a href="calendar.html">Календар втрат</a>
-        <a href="npz.html">НПЗдець</a>
-      </nav>
-    </div>
-  <div>
-    <h1>Велика картина війни</h1>
-    <p class="sub">Новина — це один день, а тут — тренд за рік: 2025 проти 2026, на перевірених даних.</p>
-  </div>
-  <div class="controls">
-    <div class="row">
-      <div class="seg" id="yearSeg">
-        <button class="on" data-y="both">Обидва роки</button>
-        <button data-y="2025">2025</button>
-        <button data-y="2026">2026</button>
-      </div>
-      <button class="btn on" id="trendBtn"><span class="dot"></span><span>Тренди: увімк.</span></button>
-    </div>
+  <div class="brand-row">
+    <a class="logo" href="./" aria-label="Перемогіум — на головну"><!--logo:start--><svg viewBox="6.5 -76.7 903.9 78.4" aria-hidden="true" focusable="false"><path fill="currentColor" d="M6.50-75L87.80-75L87.80 0L64.50 0L64.50-54.40L29.80-54.40L29.80 0L6.50 0L6.50-75ZM129.20-45.70L170.30-45.70L170.30-29.30L129.20-29.30L127.40-18.60L173.80-18.60L173.80 0L102.70 0L108.30-37.50L102.70-75L173.30-75L173.30-56.40L127.40-56.40L129.20-45.70ZM189.10-75L232.00-75Q241.80-75 248.85-71.70Q255.90-68.40 259.60-62.45Q263.30-56.50 263.30-48.40L263.30-48.40Q263.30-40.40 259.60-34.40Q255.90-28.40 248.85-25.10Q241.80-21.80 232.00-21.80L232.00-21.80L212.40-21.80L212.40 0L189.10 0L189.10-75ZM212.40-56.60L212.40-40.20L230.50-40.20Q234.90-40.20 237.35-42.40Q239.80-44.60 239.80-48.40L239.80-48.40Q239.80-52.40 237.35-54.50Q234.90-56.60 230.50-56.60L230.50-56.60L212.40-56.60ZM300-45.70L341.10-45.70L341.10-29.30L300-29.30L298.20-18.60L344.60-18.60L344.60 0L273.50 0L279.10-37.50L273.50-75L344.10-75L344.10-56.40L298.20-56.40L300-45.70ZM436.50-75L472.50-75L472.50 0L450.30 0L450.30-54.70L427.80 0L404.60 0L382.00-54.60L382.00 0L359.90 0L359.90-75L395.80-75L416.20-23.10L436.50-75ZM531.40 1.70L531.40 1.70Q517.90 1.70 507.75-3.20Q497.60-8.10 491.95-16.90Q486.30-25.70 486.30-37.50L486.30-37.50Q486.30-49.30 491.95-58.10Q497.60-66.90 507.75-71.80Q517.90-76.70 531.40-76.70L531.40-76.70Q544.90-76.70 555.05-71.80Q565.20-66.90 570.85-58.10Q576.50-49.30 576.50-37.50L576.50-37.50Q576.50-25.70 570.85-16.90Q565.20-8.10 555.05-3.20Q544.90 1.70 531.40 1.70ZM531.40-19L531.40-19Q538.10-19 542.95-21.25Q547.80-23.50 550.40-27.65Q553-31.80 553-37.50L553-37.50Q553-43.20 550.40-47.35Q547.80-51.50 542.95-53.75Q538.10-56 531.40-56L531.40-56Q524.70-56 519.85-53.75Q515-51.50 512.40-47.35Q509.80-43.20 509.80-37.50L509.80-37.50Q509.80-31.80 512.40-27.65Q515-23.50 519.85-21.25Q524.70-19 531.40-19ZM590.40-75L648.90-75L648.90-54.30L613.70-54.30L613.70 0L590.40 0L590.40-75ZM661.40 0L661.40-75L684.70-75L684.70 0L661.40 0ZM744.60 0L719.50 0L728.90-16.50L695.30-75L720.90-75L741.70-38.50L762.30-75L787.40-75L744.60 0ZM874.40-75L910.40-75L910.40 0L888.20 0L888.20-54.70L865.70 0L842.50 0L819.90-54.60L819.90 0L797.80 0L797.80-75L833.70-75L854.10-23.10L874.40-75Z"/></svg><!--logo:end--></a>
+    <span class="pill">🧪 Експеримент. Не є офіційним джерелом.</span>
+    <nav class="tabs" aria-label="Розділи">
+      <a href="./" class="on" aria-current="page">Головна</a>
+      <a href="year.html">2026 проти 2025</a>
+      <a href="war.html">2026 проти всієї війни</a>
+      <a href="calendar.html">Календар втрат</a>
+      <a href="npz.html">НПЗдець</a>
+    </nav>
   </div>
 </header>
 
-<!-- 01 KPI -->
-<section>
-  <div class="sec-head">
-    <div><div class="eyebrow">Секція 01 • Головне</div><h2>Чотири цифри, які варто пам'ятати</h2></div>
-    <div class="sec-meta mono" id="kpiMeta"></div>
-  </div>
-  <div class="kpis" id="kpis"></div>
-</section>
-
-<!-- 02 Charts -->
-<section>
-  <div class="sec-head">
-    <div><div class="eyebrow">Секція 02 • Помісячна динаміка</div><h2>Як змінювалося кожного місяця</h2></div>
-    <div class="sec-meta">Наведіть на місяць — підсвітиться на обох графіках</div>
-  </div>
-  <div class="charts">
-    <div class="panel">
-      <div class="ch-title"><span class="sq" style="background:var(--cur)"></span>Графік А: Скільки землі захоплює росія за добу</div>
-      <div class="ch-sub">Середня площа за добу в кожному місяці, км² (карта DeepState)</div>
-      <div class="chips" id="chipsA"></div>
-      <div class="legend" id="legA"></div>
-      <div class="chart-box"><canvas id="chA"></canvas></div>
-      <div class="ch-foot" id="footA"></div>
-      <div class="explain" id="explainA"></div>
-    </div>
-    <div class="panel">
-      <div class="ch-title"><span class="sq" style="background:var(--prev)"></span>Графік Б: Скільки військових втрачає росія за добу</div>
-      <div class="ch-sub">Убиті та поранені, у середньому за добу в кожному місяці, осіб (Генштаб ЗСУ)</div>
-      <div class="chips" id="chipsB"></div>
-      <div class="legend" id="legB"></div>
-      <div class="chart-box"><canvas id="chB"></canvas></div>
-      <div class="ch-foot" id="footB"></div>
-      <div class="explain" id="explainB"></div>
-    </div>
-  </div>
-</section>
-
-<!-- 03 Insights -->
-<section>
-  <div class="sec-head">
-    <div><div class="eyebrow">Секція 03 • Висновки</div><h2>Що з цього випливає</h2></div>
-    <div class="sec-meta">Факти — зверху, висновок людською мовою — внизу картки</div>
-  </div>
-  <div class="insights" id="insights"></div>
-</section>
-
-<!-- 04 Honest -->
-<section>
-  <div class="sec-head">
-    <div><div class="eyebrow" style="color:var(--warn)">Секція 04 • Чесно</div><h2>Що не так добре</h2></div>
-    <div class="sec-meta">Картина без цього була б неповною</div>
-  </div>
-  <div class="honest" id="honest"></div>
-</section>
-
-<!-- 05 Table -->
-<section>
-  <div class="sec-head">
-    <div><div class="eyebrow">Секція 05 • Таблиці</div><h2>Усі цифри</h2></div>
-    <div class="sec-meta">Одиниці: км², км²/добу, осіб</div>
-  </div>
-  <div class="panel">
-    <div class="tbl-scroll"><table id="statTbl"></table></div>
-    <details>
-      <summary id="monthSummary">Показати помісячну таблицю</summary>
-      <div class="tbl-scroll"><table id="monthTbl"></table></div>
-    </details>
-  </div>
-</section>
-
-<!-- 06 Sources -->
-<section class="sources">
-  <div class="sec-head">
-    <div><div class="eyebrow">Секція 06 • Джерела та методика</div><h2>Звідки цифри</h2></div>
-  </div>
-  <div class="panel"><ol id="sources"></ol></div>
-</section>
-
+<a class="panel hero" id="hero" href="war.html" style="display:block"></a>
+<div class="cards" id="cards"></div>
+<div class="strip">
+  <div class="panel fact" id="fact"></div>
+  <a class="panel honest" id="honest" href="year.html"></a>
+</div>
 <footer id="footer"></footer>
 </div>
 
 <script>
 (() => {
-const D = window.PEREMOGIUM_DATA;
+const D = window.PEREMOGIUM_DATA, NPZ = window.NPZ_DATA, YRS = window.PEREMOGIUM_YEARS;
 if (!D) {
   document.querySelector('.wrap').insertAdjacentHTML('afterbegin', '<div class="err">Не вдалося завантажити дані (data/data.js). Запустіть <code>npm run update</code>.</div>');
   return;
 }
 
-// ================= DATA =================
+// ================= ДОВІДНИКИ =================
 const MS = ['Січ','Лют','Бер','Кві','Тра','Чер','Лип','Сер','Вер','Жов','Лис','Гру'];
-const MFA = ['січень','лютий','березень','квітень','травень','червень','липень','серпень','вересень','жовтень','листопад','грудень'];
-const MGEN = ['січня','лютого','березня','квітня','травня','червня','липня','серпня','вересня','жовтня','листопада','грудня'];
 const MLOC = ['січні','лютому','березні','квітні','травні','червні','липні','серпні','вересні','жовтні','листопаді','грудні'];
-// Яку пару років показуємо: ?y=2026 → «2026 проти 2025»; без параметра — найновіший рік, у якому вже є дані.
-const hasData = y => (D.personnel.monthly[y]?.length || D.personnel.partial?.[y]) && (D.territory.monthly[y]?.length || D.territory.partial?.[y]);
-const PAIRS = (window.PEREMOGIUM_YEARS?.pairs || [2026]).filter(y => D.personnel.monthly[y - 1]);
-const askY = +new URLSearchParams(location.search).get('y');
-const CUR = PAIRS.includes(askY) ? askY : (PAIRS.find(hasData) ?? PAIRS.at(-1)), PREV = CUR - 1;
-window.PEREMOGIUM_PAIR = CUR;
-const COL = window.PEREMOGIUM_YEARS?.color || (y => getComputedStyle(document.documentElement).getPropertyValue('--y' + y).trim());
-document.documentElement.style.setProperty('--prev', COL(PREV));
-document.documentElement.style.setProperty('--cur', COL(CUR));
-document.title = `${CUR} проти ${PREV} · Перемогіум`;
-document.querySelector('.sub').textContent = `Новина — це один день, а тут — тренд за рік: ${PREV} проти ${CUR}, на перевірених даних.`;
-{ const [bp, bc] = ['2025', '2026'].map(y => document.querySelector(`#yearSeg [data-y="${y}"]`));
-  bp.textContent = bp.dataset.y = PREV; bc.textContent = bc.dataset.y = CUR; }
-if (!hasData(CUR)) {
-  document.querySelector('.wrap').insertAdjacentHTML('beforeend', `<div class="err">Даних за ${CUR} рік ще немає — вони з'являться після першого ранкового зведення Генштабу. <a href="./?y=${PREV}">${PREV} проти ${PREV - 1} →</a></div>`);
-  return;
-}
-// Днів у кожному місяці (з урахуванням високосних років) — окремо для обох років пари
-const dim = (y, m) => new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
-const DAYS = y => Array.from({ length: 12 }, (_, m) => dim(y, m));
-const DAYS_ALL = DAYS(CUR), DAYS_PREV = DAYS(PREV);
-
-// Повні місяці, які є для обох джерел.
-const NF = Math.min(D.territory.monthly[CUR].length, D.personnel.monthly[CUR].length);
-
-// Щоденні втрати рф за конкретний місяць (з щоденного ряду Генштабу)
-const t0 = Date.parse(D.personnel.daily.start + 'T00:00:00Z');
-const dayVal = new Map(D.personnel.daily.values.map((v, i) => [new Date(t0 + i * 864e5).toISOString().slice(0, 10), v]));
-const persDays = (y, m) => { const out = []; for (let d = 1; d <= DAYS_ALL[m]; d++) { const v = dayVal.get(`${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`); if (v == null) break; out.push(v); } return out; };
-
-// Неповний поточний місяць 2026: додаємо, якщо є і для території, і для втрат.
-const tp = D.territory.partial?.[CUR];
-const ppDays26 = persDays(CUR, NF);
-const HAS_P = !!(tp && tp.month === NF + 1 && ppDays26.length);
-const N = NF + (HAS_P ? 1 : 0);
-const P = NF;                                              // індекс неповного місяця
-const tDaysP = HAS_P ? new Date(tp.asOf).getUTCDate() : 0; // днів у неповному місяці (територія)
-const pDaysP = ppDays26.length;                            // днів у неповному місяці (втрати)
-
-// 2025 — увесь рік (12 місяців); 2026 — повні місяці + неповний поточний.
-const N25 = Math.min(D.territory.monthly[PREV].length, D.personnel.monthly[PREV].length);
-const NM = Math.max(N25, N);                               // скільки місяців на осі графіків
-const M = MS.slice(0, NM).map((m, i) => HAS_P && i === P ? m + '*' : m);
-const MF = MFA.slice(0, NM);
-const terrM = { [PREV]: D.territory.monthly[PREV].slice(0, N25), [CUR]: [...D.territory.monthly[CUR].slice(0, NF), ...(HAS_P ? [tp.value] : [])] };
-const terrD = { [PREV]: DAYS_PREV.slice(0, N25), [CUR]: [...DAYS_ALL.slice(0, NF), ...(HAS_P ? [tDaysP] : [])] };
-const persM = { [PREV]: D.personnel.monthly[PREV].slice(0, N25), [CUR]: [...D.personnel.monthly[CUR].slice(0, NF), ...(HAS_P ? [ppDays26.reduce((a, b) => a + b, 0)] : [])] };
-const persD = { [PREV]: DAYS_PREV.slice(0, N25), [CUR]: [...DAYS_ALL.slice(0, NF), ...(HAS_P ? [pDaysP] : [])] };
-const oil = D.oilGas, oilYears = D.oilGasYears?.years || {};
-const OIL_CUR = oil.year === CUR;                          // поточний рік: з початку року, з % до того ж періоду торік
-const oil26 = OIL_CUR ? oil.value : oilYears[CUR], oil25 = OIL_CUR ? oil.value / (1 + oil.changePct / 100) : oilYears[PREV];
-const HAS_OIL = oil26 != null && oil25 != null;
-const oilChange = HAS_OIL ? (OIL_CUR ? oil.changePct : Math.round((oil26 / oil25 - 1) * 100)) : 0;
-const oilPeriod = OIL_CUR ? oil.period : 'рік';
-
-// ================= HELPERS =================
-const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
-const C25 = COL(PREV), C26 = COL(CUR);
-const sp = n => Math.round(n).toLocaleString('en-US').replace(/,/g, ' ');
+const MGEN = ['січня','лютого','березня','квітня','травня','червня','липня','серпня','вересня','жовтня','листопада','грудня'];
+const sp = n => Math.round(n).toLocaleString('en-US').replace(/,/g, ' ');
 const dec = (n, d = 1) => n.toFixed(d).replace('.', ',');
-const cap = s => s[0].toUpperCase() + s.slice(1);
 const sum = a => a.reduce((s, x) => s + (x ?? 0), 0);
-const dateUA = iso => { const d = new Date(iso); return `${d.getDate()} ${MGEN[d.getMonth()]} ${d.getFullYear()}`; };
 const pct = (a, b) => (b / a - 1) * 100;
-const sgn = (n, d = 2) => isNaN(n) ? '—' : (n >= 0 ? '+' : '−') + dec(Math.abs(n), d);
 const plural = (n, [one, few, many]) => { n = Math.abs(Math.round(n)) % 100; const d = n % 10; return n > 10 && n < 20 ? many : d === 1 ? one : d >= 2 && d <= 4 ? few : many; };
-const daysW = n => `${n} ${plural(n, ['день', 'дні', 'днів'])}`;
-const sgnInt = n => isNaN(n) ? '—' : (n >= 0 ? '+' : '−') + sp(Math.abs(n));
-const times = r => `у ${dec(r)} раза`;
-function regress(a) {
-  if (a.length < 2) return { k: NaN, line: a.map(() => null) };
-  const n = a.length, mx = (n - 1) / 2, my = sum(a) / n;
-  let num = 0, den = 0;
-  a.forEach((y, x) => { num += (x - mx) * (y - my); den += (x - mx) ** 2; });
-  const k = num / den, b = my - k * mx;
-  return { k, line: a.map((_, x) => +(b + k * x).toFixed(2)) };
-}
-const argmax = a => a.indexOf(Math.max(...a)), argmin = a => a.indexOf(Math.min(...a));
+const times = r => r >= 10 ? `у ${Math.round(r)} ${plural(r, ['раз', 'рази', 'разів'])}` : `у ${dec(r)} раза`;
+const dm = iso => { const d = new Date(iso + 'T00:00:00Z'); return `${d.getUTCDate()} ${MGEN[d.getUTCMonth()]}`; };
+const dateUA = iso => { const d = new Date(iso); return `${d.getUTCDate()} ${MGEN[d.getUTCMonth()]} ${d.getUTCFullYear()}`; };
+const dim = (y, m) => new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+const iso = t => new Date(t).toISOString().slice(0, 10);
+const COL = YRS?.color || (y => ({ 2025: '#3987e5', 2026: '#c98500' })[y]);
 
-// ================= DERIVED =================
-// 2025 — увесь рік; 2026 — з 1 січня до сьогодні. Щоб порівняння було чесним,
-// «у скільки разів» рахуємо в середньому за добу.
-const days25 = sum(DAYS_PREV.slice(0, N25));
-const tdays = sum(DAYS_ALL.slice(0, NF)) + tDaysP;
-const pdays = sum(DAYS_ALL.slice(0, NF)) + (HAS_P ? pDaysP : 0);
-const t25 = sum(terrM[PREV]), t26 = sum(terrM[CUR]);
-const p25 = sum(persM[PREV]), p26 = sum(persM[CUR]);
-const r25 = t25 / days25, r26 = t26 / tdays;
-const pr25 = p25 / days25, pr26 = p26 / pdays;
-const price25 = p25 / t25, price26 = p26 / t26;
-const Y25 = N25 === 12 ? 'весь ' + PREV + '' : `${PREV} (${N25} міс.)`;
-const pd = (m, d) => m.map((v, i) => +(v / d[i]).toFixed(2));
-const pd25 = pd(terrM[PREV], terrD[PREV]), pd26 = pd(terrM[CUR], terrD[CUR]);
-const pp25 = pd(persM[PREV], persD[PREV]), pp26 = pd(persM[CUR], persD[CUR]);
-const regA25 = regress(pd25), regA26 = regress(pd26);
-const regB25 = regress(pp25), regB26 = regress(pp26);
-const lastDay = HAS_P ? pDaysP : DAYS_ALL[NF - 1];
-const PERIOD_LONG = `1 січня – ${lastDay} ${MGEN[N - 1]}`;
-const PERIOD = `${MS[0].toLowerCase()}–${lastDay} ${MS[N - 1].toLowerCase()}`;
+// ================= РОКИ =================
+const hasData = y => (D.personnel.monthly[y]?.length || D.personnel.partial?.[y]) && (D.territory.monthly[y]?.length || D.territory.partial?.[y]);
+const PAIRS = (YRS?.pairs || [2026]).filter(y => D.personnel.monthly[y - 1]);
+const CUR = PAIRS.find(hasData) ?? PAIRS.at(-1), PREV = CUR - 1;
+const C_CUR = COL(CUR), C_PREV = COL(PREV);
+document.documentElement.style.setProperty('--cur', C_CUR);
+document.documentElement.style.setProperty('--prev', C_PREV);
+const YEAR_HREF = CUR === PAIRS[0] ? 'year.html' : 'year.html?y=' + CUR;
 
-// ================= HEADER / META =================
-document.getElementById('kpiMeta').textContent = `${CUR}: ${PERIOD_LONG} (${daysW(pdays)}) · ${PREV}: весь рік · порівнюємо в середньому за добу`;
+// ================= ЩОДЕННІ ВТРАТИ =================
+const t0 = Date.parse(D.personnel.daily.start + 'T00:00:00Z');
+const daily = D.personnel.daily.values.map((v, i) => ({ d: iso(t0 + i * 864e5), v }));
+const dayVal = new Map(daily.map(x => [x.d, x.v]));
+const last = daily.at(-1);
 
-// ================= KPI =================
-function kpi({ label, badge, good, val, unit, a, b, fa, fb, human, more }) {
-  const tot = a + b;
-  return `<div class="panel">
-    <div class="kpi-top"><div class="kpi-label">${label}</div><span class="badge ${good ? 'good' : 'bad'}">${badge}</span></div>
-    <div class="kpi-val"><span class="v26">${val}</span><small>${unit} у ${CUR}</small></div>
-    <div class="split"><i style="background:${C25};width:${a / tot * 100}%"></i><i style="background:${C26};width:${b / tot * 100}%"></i></div>
-    <div class="kpi-foot"><span><i class="lg a"></i>${N25 === 12 ? '' + PREV + ' рік' : Y25}: <b>${fa}</b></span><span><i class="lg b"></i>${CUR}: <b>${fb}</b></span></div>
-    <div class="kpi-human">${human}</div>
-    ${more ? `<a class="more" href="${more[0]}">${more[1]} →</a>` : ''}
+// ================= З ПОЧАТКУ РОКУ (так само, як на сторінці року) =================
+const NF = Math.min(D.territory.monthly[CUR].length, D.personnel.monthly[CUR].length);
+const tp = D.territory.partial?.[CUR];
+const ppDays = []; for (let d = 1; d <= 31; d++) { const v = dayVal.get(`${CUR}-${String(NF + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`); if (v == null) break; ppDays.push(v); }
+const HAS_P = !!(tp && tp.month === NF + 1 && ppDays.length);
+const N25 = Math.min(D.territory.monthly[PREV].length, D.personnel.monthly[PREV].length);
+const DAYS = y => Array.from({ length: 12 }, (_, m) => dim(y, m));
+const terr = { [PREV]: D.territory.monthly[PREV].slice(0, N25), [CUR]: [...D.territory.monthly[CUR].slice(0, NF), ...(HAS_P ? [tp.value] : [])] };
+const terrD = { [PREV]: DAYS(PREV).slice(0, N25), [CUR]: [...DAYS(CUR).slice(0, NF), ...(HAS_P ? [new Date(tp.asOf).getUTCDate()] : [])] };
+const pers = { [PREV]: D.personnel.monthly[PREV].slice(0, N25), [CUR]: [...D.personnel.monthly[CUR].slice(0, NF), ...(HAS_P ? [sum(ppDays)] : [])] };
+const persD = { [PREV]: DAYS(PREV).slice(0, N25), [CUR]: [...DAYS(CUR).slice(0, NF), ...(HAS_P ? [ppDays.length] : [])] };
+const t26 = sum(terr[CUR]), p25 = sum(pers[PREV]), p26 = sum(pers[CUR]);
+const r25 = sum(terr[PREV]) / sum(terrD[PREV]), r26 = t26 / sum(terrD[CUR]);
+const pr25 = p25 / sum(persD[PREV]), pr26 = p26 / sum(persD[CUR]);
+const slower = r26 < r25;
+
+// Ціна 1 км² — як на сторінці всієї війни: втрати рф ÷ усе захоплене (звільнене не віднімаємо)
+const warYears = (D.years || []).filter(y => y <= CUR).map(yr => {
+  const pm = [...D.personnel.monthly[yr]], gm = [...(D.territory.gained?.[yr] || [])];
+  if (yr === CUR) { pm.length = gm.length = NF; if (HAS_P) { pm.push(sum(ppDays)); gm.push(D.territory.partialGained?.[CUR]?.value ?? null); } }
+  const g = sum(gm), p = sum(pm.map((v, m) => gm[m] == null ? 0 : v));
+  return { yr, price: g > 0 ? p / g : null };
+}).filter(r => r.price);
+const price25 = warYears.find(r => r.yr === PREV)?.price, price26 = warYears.find(r => r.yr === CUR)?.price;
+const priceUp = price26 >= price25;
+const rank = [...warYears].sort((a, b) => b.price - a.price).findIndex(r => r.yr === CUR) + 1;
+
+// ================= НПЗ =================
+const npzAsOf = NPZ?.asOf || last.d;
+const strikes = NPZ?.strikes || [];
+const s26 = strikes.filter(s => s.date.startsWith(CUR + '-') && s.date <= npzAsOf);
+const s25 = strikes.filter(s => s.date.startsWith(PREV + '-') && s.date <= npzAsOf.replace(/^\d{4}/, PREV));
+const plants26 = new Set(s26.map(s => s.id)).size;
+
+// ================= SVG-ПОМІЧНИКИ =================
+const W = 300, H = 140;
+const bars = (vals, { colors, labels, top = [], pad = 4, hl = -1, dashedLast = false }) => {
+  const mx = Math.max(...vals, 1), bw = (W - 2 * pad) / vals.length;
+  return vals.map((v, i) => {
+    const h = Math.max(v / mx * (H - 36), 1), bx = pad + i * bw + bw * .16, by = H - 18 - h, cx = (bx + bw * .34).toFixed(1);
+    const dash = dashedLast && i === vals.length - 1;
+    return `<rect class="bar" style="--i:${i}" x="${bx.toFixed(1)}" y="${by.toFixed(1)}" width="${(bw * .68).toFixed(1)}" height="${h.toFixed(1)}" rx="3" fill="${colors(i)}" fill-opacity="${dash ? .45 : i === hl || hl < 0 ? 1 : .5}"${dash ? ` stroke="${colors(i)}" stroke-dasharray="3 2"` : ''}/>`
+      + (top[i] != null ? `<text class="vlbl fadein" style="--i:${i}" x="${cx}" y="${(by - 5).toFixed(1)}" text-anchor="middle"${i === hl ? ' fill="#fff"' : ''}>${top[i]}</text>` : '')
+      + (labels[i] ? `<text class="axis" x="${cx}" y="${H - 4}" text-anchor="middle">${labels[i]}</text>` : '');
+  }).join('');
+};
+
+// ================= 1. ГОЛОВНИЙ ГРАФІК: окупована площа за всю війну =================
+const B = D.territory.boundaries || {};
+const occ = Object.entries(B).sort(([a], [b]) => a < b ? -1 : 1).map(([k, v]) => ({ t: Date.parse(v.snapshotAt), a: v.area }));
+occ.push({ t: Date.parse(D.territory.asOf + 'T12:00:00Z'), a: D.territory.occupiedNow });
+const peak = occ.reduce((a, b) => b.a > a.a ? b : a), now = occ.at(-1);
+const UA = 603628;                                                  // площа України, км²
+const yearAgo = occ.filter(p => p.t <= now.t - 365 * 864e5).at(-1) || occ[0];
+const BW = 1000, BH = 230, bp = { l: 6, r: 6, t: 26, b: 22 };
+const amin = Math.min(...occ.map(p => p.a)), amax = Math.max(...occ.map(p => p.a));
+const lo = Math.floor((amin - (amax - amin) * .25) / 10000) * 10000, hi = amax + (amax - amin) * .08;
+const tA = occ[0].t, tB = now.t;
+const bx = t => bp.l + (t - tA) / (tB - tA) * (BW - bp.l - bp.r), by = a => bp.t + (1 - (a - lo) / (hi - lo)) * (BH - bp.t - bp.b);
+const occPath = occ.map((p, i) => `${i ? 'L' : 'M'}${bx(p.t).toFixed(1)},${by(p.a).toFixed(1)}`).join('');
+const yearTicks = []; for (let y = 2023; y <= new Date(tB).getUTCFullYear(); y++) yearTicks.push(y);
+const occViz = `<svg viewBox="0 0 ${BW} ${BH}" preserveAspectRatio="none" aria-hidden="true">
+  <defs><linearGradient id="gOcc" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--occ)" stop-opacity=".28"/><stop offset="1" stop-color="var(--occ)" stop-opacity="0"/></linearGradient>
+  <clipPath id="wOcc"><rect class="wipe" x="0" y="0" width="${BW}" height="${BH}"/></clipPath></defs>
+  ${yearTicks.map(y => `<line x1="${bx(Date.UTC(y, 0, 1))}" x2="${bx(Date.UTC(y, 0, 1))}" y1="${bp.t - 10}" y2="${BH - bp.b}" stroke="#1d2433" vector-effect="non-scaling-stroke"/>`).join('')}
+  <g clip-path="url(#wOcc)">
+    <path d="${occPath}L${bx(tB)},${BH - bp.b}L${bx(tA)},${BH - bp.b}Z" fill="url(#gOcc)"/>
+    <path d="${occPath}" fill="none" stroke="var(--occ)" stroke-width="2.4" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>
+  </g>
+  <line x1="0" x2="${BW}" y1="${BH - bp.b}" y2="${BH - bp.b}" stroke="#273044" vector-effect="non-scaling-stroke"/>
+</svg>`;
+// Підписи — звичайним HTML поверх SVG, щоб текст не розтягувався
+const lbl = (t, a, html, align = 'center', dy = -30) => `<div class="fadein" style="--i:${align === 'end' ? 12 : 0};position:absolute;left:${(bx(t) / BW * 100).toFixed(2)}%;top:${(by(a) / BH * 100).toFixed(2)}%;transform:translate(${align === 'end' ? '-100%' : align === 'start' ? '-8px' : '-50%'},${dy}px);font:11px var(--mono);color:var(--text-2);white-space:nowrap;text-align:${align === 'end' ? 'right' : 'center'}">${html}</div>`;
+const dot = (t, a, c) => `<div class="fadein" style="--i:12;position:absolute;left:${(bx(t) / BW * 100).toFixed(2)}%;top:${(by(a) / BH * 100).toFixed(2)}%;width:9px;height:9px;margin:-4.5px 0 0 -4.5px;border-radius:50%;background:${c};box-shadow:0 0 0 3px var(--panel)"></div>`;
+const axisLbls = yearTicks.map(y => `<div style="position:absolute;left:${(bx(Date.UTC(y, 0, 1)) / BW * 100).toFixed(2)}%;bottom:0;transform:translateX(4px);font:10px var(--mono);color:var(--muted)">${y}</div>`).join('');
+const nowLower = now.a < peak.a;
+document.getElementById('hero').innerHTML = `
+  <div class="hero-top">
+    <div><div class="tag">Окупована територія за всю війну · DeepState</div>
+      <h1>${nowLower ? `Зараз окуповано <em>менше</em>, ніж у ${MLOC[new Date(peak.t).getUTCMonth()]} ${new Date(peak.t).getUTCFullYear()}-го.` : 'Окупована територія за всю війну.'} За рік лінія зрушила на ${dec((now.a - yearAgo.a) / UA * 100, 2)}% площі України.</h1></div>
+    <div class="num">${dec(now.a / UA * 100)}%<small>${sp(now.a)} км² на ${dm(D.territory.asOf)}</small></div>
+  </div>
+  <div class="big-viz">${occViz}
+    ${dot(peak.t, peak.a, 'var(--occ)')}${lbl(peak.t, peak.a, `пік · ${sp(peak.a)} км²`, 'start', -26)}
+    ${dot(now.t, now.a, '#fff')}${lbl(now.t, now.a, `зараз · ${sp(now.a)}`, 'end', -30)}
+    ${axisLbls}
+    <div style="position:absolute;left:0;bottom:24px;font:10px var(--mono);color:var(--muted)">шкала від ${sp(lo / 1000)} тис. км²</div>
   </div>`;
-}
-const terrLess = r26 < r25, persMore = pr26 >= pr25, priceUp = price26 >= price25;
-const ratioBadge = (r, more, less) => `${dec(r)}× ${r >= 1 ? more : less}`;
-document.getElementById('kpis').innerHTML = [
-  kpi({ more: ['war.html', 'Усі роки війни'], label: 'Захоплена територія · разом', badge: (terrLess ? '−' : '+') + Math.round(Math.abs(pct(r25, r26))) + '% за добу', good: terrLess,
-        val: sp(t26), unit: 'км²', a: t25, b: t26, fa: sp(t25), fb: sp(t26),
-        human: `За ${Y25} рік росія захопила ${sp(t25)} км². З початку ${CUR}-го — ${sp(t26)} км²: ` + (terrLess
-          ? `щодоби <b>${times(r25 / r26)} менше</b>.`
-          : `щодоби <b>${times(r26 / r25)} більше</b>.`) }),
-  kpi({ more: ['war.html', 'Темп за кожен рік війни'], label: 'Темп захоплення · на добу', badge: terrLess ? ratioBadge(r25 / r26, 'повільніше', '') : ratioBadge(r26 / r25, 'швидше', ''), good: terrLess,
-        val: dec(r26, 2), unit: 'км²/добу', a: r25, b: r26, fa: dec(r25, 2), fb: dec(r26, 2),
-        human: terrLess
-          ? `Росія просувається <b>${times(r25 / r26)} повільніше</b>, ніж у ${PREV}-му: ${dec(r26)} км² на добу проти ${dec(r25)}.`
-          : `Росія просувається <b>${times(r26 / r25)} швидше</b>, ніж у ${PREV}-му: ${dec(r26)} км² на добу проти ${dec(r25)}.` }),
-  kpi({ more: ['calendar.html', 'По днях у календарі'], label: 'Втрати рф · особовий склад', badge: (persMore ? '+' : '−') + dec(Math.abs(pct(pr25, pr26))) + '% за добу', good: true,
-        val: sp(p26), unit: 'осіб', a: p25, b: p26, fa: sp(p25), fb: sp(p26),
-        human: (() => {
-          // останній день із даними у 2026 проти того самого дня 2025
-          const last = new Date(Math.min(t0 + (D.personnel.daily.values.length - 1) * 864e5, Date.UTC(CUR, 11, 31)));
-          const k = d => d.toISOString().slice(0, 10);
-          const prev = new Date(last); prev.setUTCFullYear(PREV);
-          const b = dayVal.get(k(last)), a = dayVal.get(k(prev));
-          const dm = `${last.getUTCDate()} ${MGEN[last.getUTCMonth()]}`;
-          return `Убиті та поранені. ` + (a != null && b != null
-            ? `${dm} ${CUR}-го — <b>${sp(b)}</b>, а того ж дня ${PREV}-го — ${sp(a)} (<b>${b >= a ? '+' : '−'}${Math.round(Math.abs(pct(a, b)))}%</b>).` : '');
-        })() }),
-  kpi({ more: ['war.html', 'Ціна за кожен рік війни'], label: 'Ціна 1 км² · для рф', badge: priceUp ? ratioBadge(price26 / price25, 'дорожче', '') : ratioBadge(price25 / price26, 'дешевше', ''), good: priceUp,
-        val: sp(price26), unit: 'осіб/км²', a: price25, b: price26, fa: sp(price25), fb: sp(price26),
-        human: `Скільки військових рф втрачає на кожен захоплений км². ` + (priceUp
-          ? `Окупація 1 км² коштує їй <b>${times(price26 / price25)} дорожче, ніж у ${PREV}-му</b>.`
-          : `Окупація 1 км² коштує їй <b>дешевше, ніж у ${PREV}-му</b>.`) }),
+
+// ================= 2. ЧОТИРИ КАРТКИ-РОЗДІЛИ =================
+const card = ({ href, tag, num, unit, badge, good = true, viz, key = '', line }) => `
+  <a class="panel card" href="${href}">
+    <div class="card-top"><span class="tag">${tag}</span><span class="go">Відкрити →</span></div>
+    <div class="card-num"><div class="num"><span class="count" data-to="${num.n}" data-d="${num.d || 0}">${num.d ? dec(num.n, num.d) : sp(num.n)}</span><small>${unit}</small></div>${badge ? `<span class="badge${good ? '' : ' bad'}">${badge}</span>` : ''}</div>
+    <div class="viz">${viz}</div>
+    ${key}
+    <p class="line">${line}</p>
+  </a>`;
+
+// а) Ціна км² по роках
+const vizPrice = `<svg viewBox="0 0 ${W} ${H}" aria-hidden="true">${bars(warYears.map(r => r.price), {
+  colors: i => COL(warYears[i].yr), labels: warYears.map(r => r.yr), top: warYears.map(r => sp(r.price)), pad: 10,
+  hl: warYears.findIndex(r => r.yr === CUR) })}</svg>`;
+
+// б) Темп захоплення по місяцях, дві лінії
+const perDay = (m, d) => m.map((v, i) => v / d[i]);
+const lA = perDay(terr[PREV], terrD[PREV]), lB = perDay(terr[CUR], terrD[CUR]);
+const maxL = Math.max(...lA, ...lB) * 1.1;
+const px = i => 4 + i * (W - 8) / 11, py = v => 10 + (1 - v / maxL) * (H - 28);
+const lpath = a => a.map((v, i) => `${i ? 'L' : 'M'}${px(i).toFixed(1)},${py(v).toFixed(1)}`).join('');
+const larea = a => lpath(a) + `L${px(a.length - 1).toFixed(1)},${H - 18}L${px(0)},${H - 18}Z`;
+const vizPace = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
+  <defs><linearGradient id="gC" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${C_CUR}" stop-opacity=".35"/><stop offset="1" stop-color="${C_CUR}" stop-opacity="0"/></linearGradient>
+  <linearGradient id="gP" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${C_PREV}" stop-opacity=".22"/><stop offset="1" stop-color="${C_PREV}" stop-opacity="0"/></linearGradient>
+  <clipPath id="wA"><rect class="wipe" x="0" y="0" width="${W}" height="${H}"/></clipPath><clipPath id="wB"><rect class="wipe d2" x="0" y="0" width="${W}" height="${H}"/></clipPath></defs>
+  <line x1="0" x2="${W}" y1="${H - 18}" y2="${H - 18}" stroke="#273044" vector-effect="non-scaling-stroke"/>
+  <g clip-path="url(#wA)"><path d="${larea(lA)}" fill="url(#gP)"/><path d="${lpath(lA)}" fill="none" stroke="${C_PREV}" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/></g>
+  <g clip-path="url(#wB)"><path d="${larea(lB)}" fill="url(#gC)"/><path d="${lpath(lB)}" fill="none" stroke="${C_CUR}" stroke-width="2.6" vector-effect="non-scaling-stroke" stroke-linejoin="round"/></g>
+</svg>`;
+const keyPace = `<div class="key"><span><i style="background:${C_PREV}"></i>${PREV}</span><span><i style="background:${C_CUR}"></i>${CUR}</span><span>км² за добу, січ → гру</span></div>`;
+
+// в) Календар: останні 10 тижнів по днях
+const WEEKS = 10, lastT = Date.parse(last.d + 'T00:00:00Z');
+const startT = lastT - (((new Date(lastT).getUTCDay() + 6) % 7) + (WEEKS - 1) * 7) * 864e5;
+const cells = []; for (let t = startT, i = 0; i < WEEKS * 7; t += 864e5, i++) cells.push({ d: iso(t), v: t <= lastT ? dayVal.get(iso(t)) : null });
+const vals = cells.map(c => c.v).filter(v => v != null), vmin = Math.min(...vals), vmax = Math.max(...vals);
+const maxCell = cells.find(c => c.v === vmax);
+const vizCal = `<div class="heat">${cells.map((c, i) => c.v == null ? `<i class="empty" style="--i:${i}"></i>`
+  : `<i${c === maxCell ? ' class="max"' : ''} style="--i:${i};--c:${C_CUR};--o:${(.15 + .85 * (c.v - vmin) / (vmax - vmin || 1)).toFixed(2)}" title="${dm(c.d)}: ${sp(c.v)}"></i>`).join('')}</div>`;
+
+// г) НПЗ: влучання по місяцях за 12 місяців
+const months12 = []; { const d = new Date(npzAsOf + 'T00:00:00Z'); for (let k = 11; k >= 0; k--) months12.push(iso(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() - k, 1)).slice(0, 7)); }
+const byM = months12.map(m => strikes.filter(s => s.date.startsWith(m)).length), mxM = Math.max(...byM);
+const vizNpz = `<svg viewBox="0 0 ${W} ${H}" aria-hidden="true">${bars(byM, {
+  colors: () => 'var(--fire)', labels: months12.map((m, i) => i % 3 === 0 || i === 11 ? MS[+m.slice(5) - 1] : ''),
+  top: byM.map(n => n === mxM ? n : null), dashedLast: true })}</svg>`;
+
+document.getElementById('cards').innerHTML = [
+  card({ href: 'war.html', tag: 'Ціна 1 км² для рф', num: { n: price26 }, unit: 'військових',
+    badge: priceUp ? `${dec(price26 / price25)}× дорожче` : `${dec(price25 / price26)}× дешевше`, good: priceUp, viz: vizPrice,
+    line: rank === 1 ? `${CUR}-й — <b>найдорожчий рік</b> війни для рф.` : `${CUR}-й — ${rank}-й за ціною рік війни.` }),
+  card({ href: YEAR_HREF, tag: 'Темп наступу рф', num: { n: r26, d: 1 }, unit: 'км² на добу',
+    badge: slower ? `${dec(r25 / r26)}× повільніше` : `${dec(r26 / r25)}× швидше`, good: slower, viz: vizPace, key: keyPace,
+    line: `Торік — ${dec(r25)} км² на добу.` }),
+  card({ href: 'calendar.html', tag: 'Втрати рф з 1 січня', num: { n: p26 }, unit: 'осіб',
+    badge: `${pr26 >= pr25 ? '+' : '−'}${Math.round(Math.abs(pct(pr25, pr26)))}% за добу`, good: pr26 >= pr25, viz: vizCal,
+    line: `Учора — <b>${sp(last.v)}</b>. Найважчий день за 10 тижнів — ${dm(maxCell.d)}, ${sp(maxCell.v)}.` }),
+  card({ href: 'npz.html', tag: 'Удари по НПЗ рф', num: { n: s26.length }, unit: `влучань у ${CUR}`,
+    badge: s25.length && s26.length > s25.length ? `${dec(s26.length / s25.length)}× більше` : '', viz: vizNpz,
+    line: `${plants26} ${plural(plants26, ['завод', 'заводи', 'заводів'])} уражено цього року.` }),
 ].join('');
 
-// ================= CHARTS =================
-Chart.defaults.color = css('--muted');
-Chart.defaults.font.family = 'JetBrains Mono, ui-monospace, monospace';
-Chart.defaults.font.size = 11;
-const gridC = 'rgba(255,255,255,.05)';
-const tip = {
-  backgroundColor: '#0b0f17', borderColor: '#273044', borderWidth: 1, padding: 10, cornerRadius: 8,
-  titleColor: '#e8ecf3', bodyColor: '#a9b2c3', titleFont: { family: 'Inter', weight: '600', size: 12 },
-  bodyFont: { family: 'JetBrains Mono', size: 12 }, boxPadding: 4, usePointStyle: true,
-  filter: i => !i.dataset.isTrend,
+// ================= 3. ЦИФРА ДНЯ =================
+const libCur = sum([...(D.territory.liberated?.[CUR] || []).slice(0, NF), ...(HAS_P ? [D.territory.partialLiberated?.[CUR]?.value] : [])]);
+const recCur = daily.filter(x => x.d.startsWith(CUR + '-')).reduce((a, b) => b.v > a.v ? b : a, { v: 0 });
+const oil = D.oilGas;
+const SITE = 'https://calmnessuniverse.art/peremogium/';
+const facts = [
+  priceUp && { big: sp(price26), text: `військових втрачає рф за кожен захоплений км² — ${times(price26 / price25)} більше, ніж торік.` },
+  slower && { big: dec(r26) + ' км²', text: `на добу захоплює росія у ${CUR}-му. Торік — ${dec(r25)}.` },
+  { big: sp(D.personnel.totalSinceInvasion), text: `військових рф убито й поранено від початку вторгнення.` },
+  libCur > 1 && { big: sp(libCur) + ' км²', text: `звільнили сили оборони з початку ${CUR}-го.` },
+  s26.length && { big: String(s26.length), text: `влучань по НПЗ рф у ${CUR}-му.` },
+  oil?.year === CUR && oil.changePct < 0 && { big: `−${Math.abs(oil.changePct)}%`, text: `нафтогазові доходи рф за ${oil.period} проти торішніх.` },
+  recCur.v && { big: sp(recCur.v), text: `втрат рф за одну добу — ${dm(recCur.d)}, найважчий день ${CUR}-го.` },
+].filter(Boolean);
+const kyiv = new Date(Date.now() + 2 * 3600e3);
+let fi = Math.floor((Date.UTC(kyiv.getUTCFullYear(), kyiv.getUTCMonth(), kyiv.getUTCDate()) - Date.UTC(kyiv.getUTCFullYear(), 0, 0)) / 864e5) % facts.length;
+const renderFact = () => {
+  const f = facts[fi];
+  document.getElementById('fact').innerHTML = `<div class="num">${f.big}</div><p class="line">${f.text}</p>
+    <div style="display:flex;gap:6px"><button class="btn" id="copyFact">Скопіювати</button><button class="btn" id="nextFact" aria-label="Інший факт">↻</button></div>`;
+  document.getElementById('copyFact').onclick = async e => {
+    const b = e.currentTarget;
+    try { await navigator.clipboard.writeText(`${f.big} — ${f.text}\n${SITE}`); b.textContent = 'Скопійовано ✓'; b.classList.add('ok'); }
+    catch { b.textContent = 'Не вдалося'; }
+    setTimeout(() => { b.textContent = 'Скопіювати'; b.classList.remove('ok'); }, 1800);
+  };
+  document.getElementById('nextFact').onclick = () => { fi = (fi + 1) % facts.length; renderFact(); };
 };
-const fade = (hex, a) => hex + Math.round(a * 255).toString(16).padStart(2, '0');
-const areaFill = color => ctx => {
-  const { chart } = ctx, { ctx: c, chartArea } = chart;
-  if (!chartArea) return 'transparent';
-  const g = c.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-  g.addColorStop(0, fade(color, .28)); g.addColorStop(1, fade(color, 0));
-  return g;
-};
-const trendDs = (label, data, color, year) => ({
-  label, data, isTrend: true, year, type: 'line', borderColor: fade(color, .85), borderWidth: 1.5,
-  borderDash: [5, 4], pointRadius: 0, pointHoverRadius: 0, fill: false, tension: 0, order: 0,
-});
-// неповний місяць 2026: точка порожниста / стовпчик блідіший
-const isP = (y, i) => y === CUR && HAS_P && i === P;
-const lineDs = (y, data, color) => ({
-  label: String(y), year: String(y), data, borderColor: color, backgroundColor: areaFill(color), fill: true,
-  borderWidth: 2.2, tension: .35, pointRadius: 3.5, pointBackgroundColor: '#0e121a', pointBorderColor: color,
-  pointBorderWidth: 2, pointHoverRadius: 6, order: 1,
-  segment: { borderDash: c => isP(y, c.p1DataIndex) ? [4, 4] : undefined },
-});
-const barDs = (y, data, color) => ({
-  label: String(y), year: String(y), data,
-  backgroundColor: data.map((_, i) => fade(color, isP(y, i) ? .4 : .85)), hoverBackgroundColor: color,
-  borderColor: data.map((_, i) => isP(y, i) ? color : 'transparent'), borderWidth: data.map((_, i) => isP(y, i) ? 1.5 : 0),
-  borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: 'bottom', categoryPercentage: .72, barPercentage: .88, order: 1,
-});
-const title = it => cap(MF[it[0].dataIndex]);
-const pNote = (y, i, days) => isP(+y, i) ? ` (неповний: ${daysW(days)})` : '';
-const baseOpts = (tipCb, yTicks) => ({
-  maintainAspectRatio: false,
-  interaction: { mode: 'index', intersect: false },
-  plugins: { legend: { display: false }, tooltip: { ...tip, callbacks: { title, label: tipCb } } },
-  scales: {
-    x: { grid: { display: false }, border: { color: '#273044' } },
-    y: { grid: { color: gridC }, border: { display: false }, beginAtZero: true, ticks: { maxTicksLimit: 6, ...yTicks } },
-  },
-});
+renderFact();
 
-const chA = new Chart(document.getElementById('chA'), {
-  type: 'line',
-  data: { labels: M, datasets: [lineDs(PREV, pd25, C25), lineDs(CUR, pd26, C26),
-    trendDs('Тренд ' + PREV + '', regA25.line, C25, '' + PREV + ''), trendDs('Тренд ' + CUR + '', regA26.line, C26, '' + CUR + '')] },
-  options: baseOpts(c => { const y = c.dataset.label, i = c.dataIndex;
-    return ` ${y}: ${dec(c.raw, 2)} км²/добу · ${sp(terrM[y][i])} км² за ${isP(+y, i) ? daysW(tDaysP) : 'місяць'}`; }, {}),
-});
-const chB = new Chart(document.getElementById('chB'), {
-  type: 'bar',
-  data: { labels: M, datasets: [barDs(PREV, pp25, C25), barDs(CUR, pp26, C26),
-    trendDs('Тренд ' + PREV + '', regB25.line, C25, '' + PREV + ''), trendDs('Тренд ' + CUR + '', regB26.line, C26, '' + CUR + '')] },
-  options: baseOpts(c => { const y = c.dataset.label, i = c.dataIndex;
-    return ` ${y}: ${sp(c.raw)} осіб/добу · ${sp(persM[y][i])} за ${isP(+y, i) ? daysW(pDaysP) : 'місяць'}`; }, {}),
-});
+// ================= 4. ЧЕСНО =================
+document.getElementById('honest').innerHTML = `<span class="tag">⚠ Чесно</span>
+  <p class="line">Росія все одно просувається: <b>${sp(t26)} км²</b> з початку ${CUR}-го. Повільніше, але це більше за площу Києва.</p>`;
 
-// chips, legends, footers, explanations
-document.getElementById('chipsA').innerHTML =
-  `<span class="chip a">${PREV}: ${sgn(regA25.k)} км²/добу щомісяця</span><span class="chip b">${CUR}: ${sgn(regA26.k)} км²/добу щомісяця</span>`;
-document.getElementById('chipsB').innerHTML =
-  `<span class="chip a">${PREV}: ${sgnInt(regB25.k)} осіб/добу щомісяця</span><span class="chip b">${CUR}: ${sgnInt(regB26.k)} осіб/добу щомісяця</span>`;
-const leg = shape => `
-  <span><i class="${shape}" style="${shape === 'bx' ? 'background' : 'border-color'}:${C25}"></i>Факт ${PREV}</span>
-  <span class="tr"><i class="ln d" style="border-color:${C25}"></i>Тренд ${PREV}</span>
-  <span><i class="${shape}" style="${shape === 'bx' ? 'background' : 'border-color'}:${C26}"></i>Факт ${CUR}</span>
-  <span class="tr"><i class="ln d" style="border-color:${C26}"></i>Тренд ${CUR}</span>`;
-document.getElementById('legA').innerHTML = leg('ln');
-document.getElementById('legB').innerHTML = leg('bx');
-
-const minA = argmin(pd26), maxA25 = argmax(pd25), maxA26 = argmax(pd26);
-const partialFoot = days => HAS_P ? `<br>* ${MFA[P]} ${CUR} ще триває: показано ${daysW(days)}` : '';
-document.getElementById('footA').innerHTML = `Мін. ${CUR}: ${MF[minA]} (${dec(pd26[minA], 2)} км²/добу)` + partialFoot(tDaysP);
-// пік — серед повних місяців (за сумою за місяць)
-const full26 = persM[CUR].slice(0, NF), full25 = persM[PREV];
-const maxB = argmax(full26);
-const allTimeRecord = Math.max(...full26) >= Math.max(...full25);
-document.getElementById('footB').innerHTML = !NF ? `Повних місяців ${CUR}-го ще немає` + partialFoot(pDaysP) :
-  `Пік ${CUR}: ${MF[maxB]} (${sp(full26[maxB])} осіб за місяць)${allTimeRecord ? ' — більше, ніж будь-коли у ' + PREV + '-му' : ''}` + partialFoot(pDaysP);
-
-const dir = k => isNaN(k) ? 'поки замало місяців для тренду' : k >= 0 ? '<b>дедалі більше</b> (тренд іде вгору)' : '<b>дедалі менше</b> (тренд іде вниз)';
-document.getElementById('explainA').innerHTML = `<span class="lbl">Людською мовою</span>
-  У ${PREV}-му росія з кожним місяцем захоплювала ${dir(regA25.k)}. У ${CUR}-му — ${dir(regA26.k)}.
-  Найшвидше ${PREV}-го: ${MF[maxA25]}, ${dec(pd25[maxA25])} км² на добу. Найшвидше ${CUR}-го: ${MF[maxA26]}, ${dec(pd26[maxA26])} км² на добу.`;
-document.getElementById('explainB').innerHTML = `<span class="lbl">Людською мовою</span>` + (regB26.k > 0
-  ? `Втрати рф у ${CUR}-му <b>ростуть</b>. Разом із графіком А це означає: росія штурмує ${persMore ? 'сильніше, ніж торік' : 'так само'}, але просувається ${terrLess ? '<b>значно повільніше</b>' : 'не швидше'}.`
-  : `Втрати рф у ${CUR}-му <b>знижуються</b>. Порівнюйте з графіком А: важливо, скільки землі росія отримує за ці втрати.`);
-
-// synced hover
-function syncHover(src, dst) {
-  src.canvas.addEventListener('mousemove', e => {
-    const pts = src.getElementsAtEventForMode(e, 'index', { intersect: false }, false);
-    if (!pts.length) return;
-    const i = pts[0].index;
-    const act = dst.data.datasets.map((d, di) => ({ d, di }))
-      .filter(o => !o.d.isTrend && !dst.getDatasetMeta(o.di).hidden && o.d.data[i] != null)
-      .map(o => ({ datasetIndex: o.di, index: i }));
-    dst.setActiveElements(act); dst.tooltip.setActiveElements(act, { x: 0, y: 0 }); dst.update('none');
-  });
-  src.canvas.addEventListener('mouseleave', () => { dst.setActiveElements([]); dst.tooltip.setActiveElements([], { x: 0, y: 0 }); dst.update('none'); });
-}
-syncHover(chA, chB); syncHover(chB, chA);
-
-// controls
-let yearMode = 'both', trendsOn = true;
-function applyVis() {
-  for (const ch of [chA, chB]) {
-    ch.data.datasets.forEach((d, i) => {
-      const yearOk = yearMode === 'both' || d.year === yearMode;
-      ch.getDatasetMeta(i).hidden = !(yearOk && (!d.isTrend || trendsOn));
-    });
-    ch.update();
-  }
-  document.querySelectorAll('.legend span').forEach(s => {
-    const y = s.textContent.includes('' + PREV + '') ? '' + PREV + '' : '' + CUR + '';
-    s.style.opacity = (yearMode === 'both' || yearMode === y) && (!s.classList.contains('tr') || trendsOn) ? 1 : .3;
-  });
-}
-document.querySelectorAll('#yearSeg button').forEach(b => b.addEventListener('click', () => {
-  document.querySelectorAll('#yearSeg button').forEach(x => x.classList.toggle('on', x === b));
-  yearMode = b.dataset.y; applyVis();
-}));
-document.getElementById('trendBtn').addEventListener('click', e => {
-  trendsOn = !trendsOn;
-  e.currentTarget.classList.toggle('on', trendsOn);
-  e.currentTarget.lastElementChild.textContent = 'Тренди: ' + (trendsOn ? 'увімк.' : 'вимк.');
-  applyVis();
-});
-
-// ================= INSIGHTS =================
-const ins = (n, ttl, rows, call) => `<div class="panel">
-  <div class="ins-head"><span class="num c${n}">0${n}</span>${ttl}</div>
-  ${rows.map(([k, v, c]) => `<div class="kv"><span>${k}</span><b class="${c || ''}">${v}</b></div>`).join('')}
-  <div class="callout c${n}">${call}</div></div>`;
-// Найкращі 3 місяці поспіль для росії у 2025-му vs ті самі місяці 2026-го (лише повні місяці)
-const tf25 = terrM[PREV].slice(0, NF), tf26 = terrM[CUR].slice(0, NF);
-let w = 0; for (let i = 1; i + 2 < NF; i++) if (sum(tf25.slice(i, i + 3)) > sum(tf25.slice(w, w + 3))) w = i;
-const win25 = sum(tf25.slice(w, w + 3)), win26 = sum(tf26.slice(w, w + 3));
-const winLbl = `${MS[w].toLowerCase()}–${MS[w + 2].toLowerCase()}`;
-const L2 = NF >= 2 ? `${MS[NF - 2].toLowerCase()}–${MS[NF - 1].toLowerCase()}` : '';
-const last25 = full25[NF - 2] + full25[NF - 1], last26 = full26[NF - 2] + full26[NF - 1];
-document.getElementById('insights').innerHTML = [
-  NF >= 3 && ins(1, terrLess ? 'Наступ гальмує' : 'Наступ не гальмує', [
-    ['Тренд ' + PREV + '', sgn(regA25.k) + ' км²/добу', 'a'],
-    ['Тренд ' + CUR + '', sgn(regA26.k) + ' км²/добу', 'o'],
-    [cap(winLbl), `${sp(win25)} → ${sp(win26)} км²`],
-  ], `У найгарячіші для росії місяці ${PREV}-го (${winLbl}) вона захопила ${sp(win25)} км². За ті самі місяці ${CUR}-го — ${sp(win26)} км², на ${Math.round(Math.abs(pct(win25, win26)))}% ${win26 < win25 ? 'менше' : 'більше'}.`),
-  NF >= 2 && ins(2, last26 > last25 ? 'Штурмів більше, не менше' : 'Інтенсивність штурмів', [
-    ['Пік втрат ' + CUR + '', `${sp(full26[maxB])} (${MF[maxB]})`, 'r'],
-    [cap(L2), `${sp(last25)} → ${sp(last26)}`],
-    ['Тренд ' + CUR + '', sgnInt(regB26.k) + ' осіб/добу', 'o'],
-  ], last26 > last25
-    ? `За ${L2} рф втратила на ${Math.round(pct(last25, last26))}% більше людей, ніж торік. Тиск не слабшає — він розбивається об оборону.`
-    : `За ${L2} рф втратила на ${Math.round(-pct(last25, last26))}% менше людей, ніж торік.`),
-  ins(3, priceUp ? '«Ціна» 1 км² зросла' : '«Ціна» 1 км² знизилася', [
-    ['' + PREV + '', sp(price25) + ' осіб/км²', 'a'],
-    ['' + CUR + '', sp(price26) + ' осіб/км²', 'o'],
-    ['Зміна', priceUp ? '×' + dec(price26 / price25) : '÷' + dec(price25 / price26), priceUp ? 'r' : ''],
-  ], priceUp
-    ? `Той самий квадратний кілометр коштує росії ${times(price26 / price25)} більше життів, ніж у ${PREV}-му.`
-    : `Квадратний кілометр дістається росії дешевше, ніж у ${PREV}-му.`),
-  HAS_OIL && ins(4, oilChange < 0 ? 'Менше грошей на війну' : 'Нафтогазові доходи рф', [
-    ['Нафтогаз ' + PREV + '', (OIL_CUR ? '≈' : '') + dec(oil25, 2) + ' трлн ₽', 'a'],
-    ['Нафтогаз ' + CUR + '', dec(oil26, 2) + ' трлн ₽', 'o'],
-    OIL_CUR && oil.planOld ? ['План на рік', `${dec(oil.planOld, 2)} → ${dec(oil.planNew, 2)} трлн ₽`, 'g'] : ['Зміна', (oilChange >= 0 ? '+' : '−') + Math.abs(oilChange) + '%', oilChange < 0 ? 'g' : 'r'],
-  ], `Головне джерело грошей рф за ${oilPeriod} дало на ${Math.abs(oilChange)}% ${oilChange < 0 ? 'менше' : 'більше'}` + (OIL_CUR && oil.planNew < oil.planOld ? ', і Мінфін рф сам урізав план.' : '.')),
-].filter(Boolean).join('');
-
-// ================= HONEST =================
-const h = (tag, ttl, fig, text) => `<div class="panel"><div class="h-tag">⚠ ${tag}</div><h3>${ttl}</h3><p>${text}</p><div class="fig">${fig}</div></div>`;
-document.getElementById('honest').innerHTML = [
-  h('Територія', 'росія все одно просувається', `${sp(t26)} км² у ${CUR} <small>проти ${sp(t25)} за ${Y25}</small>`,
-    `Повільніше, ніж торік, але з початку ${CUR}-го це ${t26 > 839 ? 'більше, ніж уся площа Києва (839 км²)' : `${Math.round(t26 / 839 * 100)}% площі Києва`}.`),
-  NF >= 1 && h('Інтенсивність', 'Штурми посилюються', `${sp(full26[maxB])} за ${MF[maxB]}`,
-    `Рекордні втрати рф означають і рекордний тиск на наших військових. Фронт тримається ціною величезних зусиль.`),
-  OIL_CUR && oil.lastMonthNote && h('Економіка рф', 'Нафта подорожчала', 'Urals > $100', oil.lastMonthNote),
-  h('Дані', 'Свіжі місяці можуть зрости', '105 → 341 км²',
-    `Ми рахуємо за картою DeepState. Частину просувань DeepState позначає із запізненням: за липень–вересень 2026-го спершу було 105 км², після уточнення — 341.`),
-].filter(Boolean).join('');
-
-// ================= TABLES =================
-// Проста таблиця: показник — 2025 — 2026 — що змінилося (людською мовою)
-const bestM = (arr, n) => { const a = arr.slice(0, n), i = argmax(a); return i < 0 ? [null, 0] : [a[i], i]; };
-const [tm25, tmi25] = bestM(terrM[PREV], N25), [tm26, tmi26] = bestM(terrM[CUR], NF);
-const [pm25, pmi25] = bestM(full25, N25), [pm26, pmi26] = bestM(full26, NF);
-const chg = (good, text) => `<td class="chg ${good ? 'g' : 'r'}">${text}</td>`;
-const row = (name, hint, v25, v26, change) => `<tr><td>${name}<span class="hint">${hint}</span></td><td class="a">${v25}</td><td class="o">${v26}</td>${change}</tr>`;
-document.getElementById('statTbl').innerHTML = `
-  <tr><th>Показник</th><th>${PREV}</th><th>${CUR}</th><th>Що змінилося</th></tr>
-  ${row('Захопила територію', `${PREV}: весь рік · ${CUR}: ${PERIOD_LONG}`, sp(t25) + ' км²', sp(t26) + ' км²',
-      chg(terrLess, terrLess ? `за добу ${times(r25 / r26)} менше` : `за добу ${times(r26 / r25)} більше`))}
-  ${row('Темп захоплення', 'у середньому за добу', dec(r25) + ' км²', dec(r26) + ' км²',
-      chg(terrLess, terrLess ? `${times(r25 / r26)} повільніше` : `${times(r26 / r25)} швидше`))}
-  ${!NF ? '' : row('Найбільше захопила за місяць', 'найгірший для нас місяць', `${sp(tm25)} км² <span class="d">${MF[tmi25]}</span>`, `${sp(tm26)} км² <span class="d">${MF[tmi26]}</span>`,
-      chg(tm26 < tm25, tm26 < tm25 ? `${times(tm25 / tm26)} менше` : `${times(tm26 / tm25)} більше`))}
-  ${row('Втрати рф', `убиті й поранені · ${PREV}: весь рік · ${CUR}: ${PERIOD_LONG}`, sp(p25), sp(p26),
-      chg(persMore, `за добу ${persMore ? '+' : '−'}${Math.round(Math.abs(pct(pr25, pr26)))}%`))}
-  ${row('Втрати рф за добу', 'у середньому', sp(pr25), sp(pr26),
-      chg(persMore, `${persMore ? '+' : '−'}${sp(Math.abs(pr26 - pr25))} на добу`))}
-  ${!NF ? '' : row('Найбільші втрати за місяць', 'найкращий для нас місяць', `${sp(pm25)} <span class="d">${MF[pmi25]}</span>`, `${sp(pm26)} <span class="d">${MF[pmi26]}</span>`,
-      chg(pm26 >= pm25, pm26 >= pm25 ? `+${Math.round(pct(pm25, pm26))}%` : `−${Math.round(-pct(pm25, pm26))}%`))}
-  ${row('Ціна 1 км² для рф', 'скільки військових за кожен км²', sp(price25), sp(price26),
-      chg(priceUp, priceUp ? `${times(price26 / price25)} дорожче` : `${times(price25 / price26)} дешевше`))}`;
-
-document.getElementById('monthSummary').textContent = `Показати по місяцях (${MFA[0]}–${MFA[NM - 1]})`;
-let mt = `<tr><th>Місяць</th><th>Захопила ${PREV}</th><th>Захопила ${CUR}</th><th>Втрати рф ${PREV}</th><th>Втрати рф ${CUR}</th></tr>`;
-const cell = (v, u = '') => v == null ? '<span class="d">—</span>' : sp(v) + u;
-for (let i = 0; i < NM; i++) {
-  const p = HAS_P && i === P;
-  mt += `<tr><td>${cap(MF[i])}${p ? ` <span class="d">${CUR}: ${daysW(pDaysP)}</span>` : ''}</td><td>${cell(terrM[PREV][i], ' км²')}</td><td>${cell(terrM[CUR][i], ' км²')}</td><td>${cell(persM[PREV][i])}</td><td>${cell(persM[CUR][i])}</td></tr>`;
-}
-document.getElementById('monthTbl').innerHTML = mt;
-
-// ================= SOURCES =================
-document.getElementById('sources').innerHTML = `
-  <li><b>Втрати рф</b> — щоденні зведення <a href="https://www.facebook.com/GeneralStaff.ua" target="_blank" rel="noopener">Генштабу ЗСУ</a>, машиночитний архів <a href="https://russianwarship.rip/" target="_blank" rel="noopener">russianwarship.rip</a>. Дані станом на ${dateUA(D.personnel.asOf)}. Місяць = накопичений підсумок на 1-ше число наступного місяця мінус підсумок на 1-ше число цього. Це оцінка української сторони; методика однакова для обох років.</li>
-  <li><b>Територія</b> — карта <a href="https://deepstatemap.live/" target="_blank" rel="noopener">DeepState</a>. Беремо знімок карти на 1-ше число кожного місяця й рахуємо площу окупованого (разом із Кримом і ОРДЛО); приріст за місяць — різниця двох знімків. Зараз окуповано ${sp(D.territory.occupiedNow)} км² (станом на ${dateUA(D.territory.asOf)}). Цифри збігаються з першими місячними підсумками DeepState; пізніші уточнення потрапляють у місяць, коли їх нанесли на карту. Детальніше — <a href="https://fakty.com.ua/ua/ukraine/20261008-skilky-terytoriyi-okupuvala-rosiya-u-veresni-2026-roku-statystyka-deepstate/" target="_blank" rel="noopener">про уточнення DeepState</a>.</li>
-  <li><b>Нафтогазові доходи рф</b> — дані Мінфіну рф через ${oil.sources.map(s => `<a href="${s.url}" target="_blank" rel="noopener">${s.title}</a>`).join(' і ')}. ${OIL_CUR ? `Значення ${PREV} року за той самий період розраховане з опублікованої зміни (${oil.changePct}%).` : 'Значення за повні роки.'} Оновлюється вручну.</li>`;
 document.getElementById('footer').textContent =
-  `Перемогіум · прототип · дані згенеровано ${dateUA(D.generatedAt)}, ${new Date(D.generatedAt).toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })}`;
+  `Перемогіум · дані на ${dateUA(D.generatedAt)} · Генштаб ЗСУ, DeepState, Мінфін рф, Вікіпедія — подробиці в розділах`;
+
+// ================= АНІМАЦІЯ ПРИ ПОЯВІ =================
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const countUp = el => {
+  const to = +el.dataset.to, d = +el.dataset.d, t1 = performance.now();
+  const step = now => { const k = Math.min(1, (now - t1) / 1100), v = to * (1 - (1 - k) ** 3); el.textContent = d ? dec(v, d) : sp(v); if (k < 1) requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+};
+const io = new IntersectionObserver(es => es.forEach(e => {
+  if (!e.isIntersecting) return;
+  e.target.classList.add('in');
+  if (!reduce) e.target.querySelectorAll('.count').forEach(countUp);
+  io.unobserve(e.target);
+}), { threshold: .3 });
+document.querySelectorAll('.hero, .card').forEach(el => io.observe(el));
 })();
 </script>
 <script src="assets/nav.js"></script>
