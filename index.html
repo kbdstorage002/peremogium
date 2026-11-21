@@ -33,7 +33,6 @@
     --bad: #f0616d;
     --warn: #e6a23c;
     --fire: #ff7a3d;
-    --occ: #f0616d;
     --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
     --r: 14px;
   }
@@ -65,6 +64,7 @@
   .go { font: 500 12px Inter, sans-serif; color: #8cbcf3; white-space: nowrap; }
   a:hover .go { color: #b7d8fb; }
   .badge { font: 600 12px var(--mono); padding: 3px 8px; border-radius: 7px; white-space: nowrap; color: var(--good); background: var(--good-bg); box-shadow: inset 0 0 0 1px rgba(47,191,113,.3); }
+  .badge.warn { color: var(--warn); background: rgba(230,162,60,.12); box-shadow: inset 0 0 0 1px rgba(230,162,60,.35); }
   .badge.bad { color: var(--bad); background: rgba(240,97,109,.12); box-shadow: inset 0 0 0 1px rgba(240,97,109,.3); }
   .num { font: 600 34px var(--mono); letter-spacing: -.02em; line-height: 1.1; font-variant-numeric: tabular-nums; }
   .num small { font: 400 13px Inter, sans-serif; color: var(--text-2); margin-left: 6px; letter-spacing: 0; }
@@ -75,10 +75,28 @@
   .hero { margin: 26px 0 14px; padding: 24px 26px 18px; }
   .hero-top { display: flex; justify-content: space-between; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
   .hero h1 { font-size: clamp(22px, 2.8vw, 30px); line-height: 1.2; margin: 6px 0 0; font-weight: 700; letter-spacing: -.015em; max-width: 720px; }
-  .hero h1 em { font-style: normal; color: var(--good); }
-  .hero .num { text-align: right; color: color-mix(in srgb, var(--occ) 70%, #fff); }
+  .hero h1 em { font-style: normal; color: color-mix(in srgb, var(--cur) 80%, #fff); }
+  .hero .num { text-align: right; font-size: 44px; color: color-mix(in srgb, var(--cur) 80%, #fff); }
   .hero .num small { display: block; margin: 4px 0 0; text-align: right; }
-  .big-viz { position: relative; height: 230px; margin-top: 18px; }
+  /* Стовпчики темпу: нуль може бути не внизу (рік, коли звільнили більше, ніж втратили) */
+  .pchart { position: relative; height: 210px; margin: 34px 0 30px; display: flex; gap: clamp(12px, 3vw, 40px); padding: 0 clamp(0px, 4vw, 60px); }
+  .pzero { position: absolute; left: 0; right: 0; border-top: 1px solid var(--border-2); }
+  .pcol { position: relative; flex: 1; }
+  .pbar { position: absolute; left: 14%; right: 14%; border-radius: 6px 6px 2px 2px; opacity: .55;
+    transform: scaleY(0); transform-origin: 50% 100%; transition: transform .8s cubic-bezier(.3,1.2,.5,1); transition-delay: calc(var(--i) * 110ms); }
+  .pbar.neg { border-radius: 2px 2px 6px 6px; transform-origin: 50% 0; }
+  .pcol.cur .pbar { opacity: 1; box-shadow: 0 0 24px color-mix(in srgb, var(--cur) 40%, transparent); }
+  .in .pbar { transform: scaleY(1); }
+  .pval { position: absolute; left: 0; right: 0; text-align: center; font: 600 15px var(--mono); color: var(--text-2); }
+  .pval small { display: block; font: 400 11px Inter, sans-serif; color: var(--good); }
+  .pcol.cur .pval { color: #fff; font-size: 18px; }
+  .pyr { position: absolute; left: 0; right: 0; bottom: -24px; text-align: center; font: 11px var(--mono); color: var(--muted); white-space: nowrap; }
+  .pcol.cur .pyr { color: var(--text-2); }
+  .held { display: flex; align-items: center; gap: 16px; padding-top: 16px; border-top: 1px dashed var(--border-2); }
+  .held-bar { flex: 0 0 180px; height: 8px; border-radius: 4px; background: #39404d; overflow: hidden; }
+  .held-bar i { display: block; height: 100%; background: linear-gradient(90deg, #3b82d6, #e3b341); }
+  .held p { margin: 0; font-size: 13px; color: var(--text-2); }
+  .held b { color: var(--text); }
 
   /* ---------- Чотири картки-розділи ---------- */
   .cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
@@ -136,7 +154,10 @@
     .wrap { padding: 0 16px; }
     .hero { padding: 18px 16px 14px; }
     .hero .num, .hero .num small { text-align: left; }
-    .big-viz { height: 190px; }
+    .pchart { height: 170px; }
+    .pval { font-size: 13px; } .pcol.cur .pval { font-size: 15px; }
+    .held { flex-direction: column; align-items: stretch; gap: 10px; }
+    .held-bar { flex: none; }
     .fact { flex-wrap: wrap; }
     .num { font-size: 28px; }
   }
@@ -160,7 +181,7 @@
   </div>
 </header>
 
-<a class="panel hero" id="hero" href="war.html" style="display:block"></a>
+<a class="panel hero" id="hero" href="year.html" style="display:block"></a>
 <div class="cards" id="cards"></div>
 <div class="strip">
   <div class="panel fact" id="fact"></div>
@@ -179,7 +200,6 @@ if (!D) {
 
 // ================= ДОВІДНИКИ =================
 const MS = ['Січ','Лют','Бер','Кві','Тра','Чер','Лип','Сер','Вер','Жов','Лис','Гру'];
-const MLOC = ['січні','лютому','березні','квітні','травні','червні','липні','серпні','вересні','жовтні','листопаді','грудні'];
 const MGEN = ['січня','лютого','березня','квітня','травня','червня','липня','серпня','вересня','жовтня','листопада','грудня'];
 const sp = n => Math.round(n).toLocaleString('en-US').replace(/,/g, ' ');
 const dec = (n, d = 1) => n.toFixed(d).replace('.', ',');
@@ -255,53 +275,47 @@ const bars = (vals, { colors, labels, top = [], pad = 4, hl = -1, dashedLast = f
   }).join('');
 };
 
-// ================= 1. ГОЛОВНИЙ ГРАФІК: окупована площа за всю війну =================
-const B = D.territory.boundaries || {};
-const occ = Object.entries(B).sort(([a], [b]) => a < b ? -1 : 1).map(([k, v]) => ({ t: Date.parse(v.snapshotAt), a: v.area }));
-occ.push({ t: Date.parse(D.territory.asOf + 'T12:00:00Z'), a: D.territory.occupiedNow });
-const peak = occ.reduce((a, b) => b.a > a.a ? b : a), now = occ.at(-1);
+// ================= 1. ГОЛОВНИЙ ГРАФІК: темп наступу рф по роках =================
+// км² на добу (захоплене мінус звільнене, як на сторінці року). 2022-й не беремо: фронт тоді рухався в обидва боки,
+// і даних DeepState до травня немає.
 const UA = 603628;                                                  // площа України, км²
-const yearAgo = occ.filter(p => p.t <= now.t - 365 * 864e5).at(-1) || occ[0];
-const BW = 1000, BH = 230, bp = { l: 6, r: 6, t: 26, b: 22 };
-const amin = Math.min(...occ.map(p => p.a)), amax = Math.max(...occ.map(p => p.a));
-const lo = Math.floor((amin - (amax - amin) * .25) / 10000) * 10000, hi = amax + (amax - amin) * .08;
-const tA = occ[0].t, tB = now.t;
-const bx = t => bp.l + (t - tA) / (tB - tA) * (BW - bp.l - bp.r), by = a => bp.t + (1 - (a - lo) / (hi - lo)) * (BH - bp.t - bp.b);
-const occPath = occ.map((p, i) => `${i ? 'L' : 'M'}${bx(p.t).toFixed(1)},${by(p.a).toFixed(1)}`).join('');
-const yearTicks = []; for (let y = 2023; y <= new Date(tB).getUTCFullYear(); y++) yearTicks.push(y);
-const occViz = `<svg viewBox="0 0 ${BW} ${BH}" preserveAspectRatio="none" aria-hidden="true">
-  <defs><linearGradient id="gOcc" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--occ)" stop-opacity=".28"/><stop offset="1" stop-color="var(--occ)" stop-opacity="0"/></linearGradient>
-  <clipPath id="wOcc"><rect class="wipe" x="0" y="0" width="${BW}" height="${BH}"/></clipPath></defs>
-  ${yearTicks.map(y => `<line x1="${bx(Date.UTC(y, 0, 1))}" x2="${bx(Date.UTC(y, 0, 1))}" y1="${bp.t - 10}" y2="${BH - bp.b}" stroke="#1d2433" vector-effect="non-scaling-stroke"/>`).join('')}
-  <g clip-path="url(#wOcc)">
-    <path d="${occPath}L${bx(tB)},${BH - bp.b}L${bx(tA)},${BH - bp.b}Z" fill="url(#gOcc)"/>
-    <path d="${occPath}" fill="none" stroke="var(--occ)" stroke-width="2.4" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>
-  </g>
-  <line x1="0" x2="${BW}" y1="${BH - bp.b}" y2="${BH - bp.b}" stroke="#273044" vector-effect="non-scaling-stroke"/>
-</svg>`;
-// Підписи — звичайним HTML поверх SVG, щоб текст не розтягувався
-const lbl = (t, a, html, align = 'center', dy = -30) => `<div class="fadein" style="--i:${align === 'end' ? 12 : 0};position:absolute;left:${(bx(t) / BW * 100).toFixed(2)}%;top:${(by(a) / BH * 100).toFixed(2)}%;transform:translate(${align === 'end' ? '-100%' : align === 'start' ? '-8px' : '-50%'},${dy}px);font:11px var(--mono);color:var(--text-2);white-space:nowrap;text-align:${align === 'end' ? 'right' : 'center'}">${html}</div>`;
-const dot = (t, a, c) => `<div class="fadein" style="--i:12;position:absolute;left:${(bx(t) / BW * 100).toFixed(2)}%;top:${(by(a) / BH * 100).toFixed(2)}%;width:9px;height:9px;margin:-4.5px 0 0 -4.5px;border-radius:50%;background:${c};box-shadow:0 0 0 3px var(--panel)"></div>`;
-const axisLbls = yearTicks.map(y => `<div style="position:absolute;left:${(bx(Date.UTC(y, 0, 1)) / BW * 100).toFixed(2)}%;bottom:0;transform:translateX(4px);font:10px var(--mono);color:var(--muted)">${y}</div>`).join('');
-const nowLower = now.a < peak.a;
+const paceYears = (D.years || []).filter(y => y >= 2023 && y <= CUR).map(yr => {
+  if (yr === CUR) return { yr, v: r26 };
+  const m = D.territory.monthly[yr], n = m.filter(v => v != null).length;
+  return { yr, v: sum(m) / sum(DAYS(yr).slice(0, n)) };
+});
+const lowerBefore = paceYears.filter(p => p.yr < CUR && p.v <= r26).at(-1);   // останній рік, коли було ще повільніше
+const pMax = Math.max(...paceYears.map(p => p.v), 0), pMin = Math.min(...paceYears.map(p => p.v), 0);
+const zeroTop = pMax / (pMax - pMin || 1) * 100;                  // де нуль, % від висоти графіка
+const heroBars = paceYears.map((p, i) => {
+  const cur = p.yr === CUR, neg = p.v < 0, h = Math.abs(p.v) / (pMax - pMin || 1) * 100;
+  const col = neg ? 'var(--good)' : COL(p.yr);
+  return `<div class="pcol${cur ? ' cur' : ''}">
+    <div class="pbar${neg ? ' neg' : ''}" style="--i:${i};top:${neg ? zeroTop : zeroTop - h}%;height:${Math.max(h, .6)}%;background:${col}"></div>
+    <div class="pval fadein" style="--i:${i};bottom:calc(${100 - zeroTop + (neg ? 0 : h)}% + 6px)">${neg ? '−' : ''}${dec(Math.abs(p.v))}${neg ? '<small>звільнено більше</small>' : ''}</div>
+    <div class="pyr">${p.yr}${cur ? ' · зараз' : ''}</div>
+  </div>`;
+}).join('');
+const occPct = D.territory.occupiedNow / UA * 100;
+const B = D.territory.boundaries || {}, yAgoKey = `${CUR - 1}-${String(new Date(D.territory.asOf).getUTCMonth() + 1).padStart(2, '0')}`;
+const yAgo = B[yAgoKey]?.area;
 document.getElementById('hero').innerHTML = `
   <div class="hero-top">
-    <div><div class="tag">Окупована територія за всю війну · DeepState</div>
-      <h1>${nowLower ? `Зараз окуповано <em>менше</em>, ніж у ${MLOC[new Date(peak.t).getUTCMonth()]} ${new Date(peak.t).getUTCFullYear()}-го.` : 'Окупована територія за всю війну.'} За рік лінія зрушила на ${dec((now.a - yearAgo.a) / UA * 100, 2)}% площі України.</h1></div>
-    <div class="num">${dec(now.a / UA * 100)}%<small>${sp(now.a)} км² на ${dm(D.territory.asOf)}</small></div>
+    <div><div class="tag">Темп наступу рф по роках · DeepState</div>
+      <h1>${slower ? `У ${CUR}-му росія просувається <em>${lowerBefore ? `найповільніше з ${lowerBefore.yr}-го` : 'найповільніше за всі роки'}</em>.` : `Темп наступу рф по роках.`}</h1></div>
+    <div class="num"><span class="count" data-to="${r26}" data-d="1">${dec(r26)}</span><small>км² на добу · у ${PREV}-му — ${dec(r25)}</small></div>
   </div>
-  <div class="big-viz">${occViz}
-    ${dot(peak.t, peak.a, 'var(--occ)')}${lbl(peak.t, peak.a, `пік · ${sp(peak.a)} км²`, 'start', -26)}
-    ${dot(now.t, now.a, '#fff')}${lbl(now.t, now.a, `зараз · ${sp(now.a)}`, 'end', -30)}
-    ${axisLbls}
-    <div style="position:absolute;left:0;bottom:24px;font:10px var(--mono);color:var(--muted)">шкала від ${sp(lo / 1000)} тис. км²</div>
+  <div class="pchart"><div class="pzero" style="top:${zeroTop}%"></div>${heroBars}</div>
+  <div class="held">
+    <div class="held-bar"><i style="width:${(100 - occPct).toFixed(2)}%"></i></div>
+    <p><b>${dec(100 - occPct)}%</b> території України — під контролем України. Окуповано ${dec(occPct)}% (${sp(D.territory.occupiedNow)} км²)${yAgo ? `; за рік ця частка зросла на ${dec((D.territory.occupiedNow - yAgo) / UA * 100, 2)} п.п.` : '.'}</p>
   </div>`;
 
 // ================= 2. ЧОТИРИ КАРТКИ-РОЗДІЛИ =================
-const card = ({ href, tag, num, unit, badge, good = true, viz, key = '', line }) => `
+const card = ({ href, tag, num, unit, badge, good = true, tone, viz, key = '', line }) => `
   <a class="panel card" href="${href}">
     <div class="card-top"><span class="tag">${tag}</span><span class="go">Відкрити →</span></div>
-    <div class="card-num"><div class="num"><span class="count" data-to="${num.n}" data-d="${num.d || 0}">${num.d ? dec(num.n, num.d) : sp(num.n)}</span><small>${unit}</small></div>${badge ? `<span class="badge${good ? '' : ' bad'}">${badge}</span>` : ''}</div>
+    <div class="card-num"><div class="num"><span class="count" data-to="${num.n}" data-d="${num.d || 0}">${num.d ? dec(num.n, num.d) : sp(num.n)}</span><small>${unit}</small></div>${badge ? `<span class="badge ${tone || (good ? '' : 'bad')}">${badge}</span>` : ''}</div>
     <div class="viz">${viz}</div>
     ${key}
     <p class="line">${line}</p>
@@ -312,24 +326,21 @@ const vizPrice = `<svg viewBox="0 0 ${W} ${H}" aria-hidden="true">${bars(warYear
   colors: i => COL(warYears[i].yr), labels: warYears.map(r => r.yr), top: warYears.map(r => sp(r.price)), pad: 10,
   hl: warYears.findIndex(r => r.yr === CUR) })}</svg>`;
 
-// б) Темп захоплення по місяцях, дві лінії
-const perDay = (m, d) => m.map((v, i) => v / d[i]);
-const lA = perDay(terr[PREV], terrD[PREV]), lB = perDay(terr[CUR], terrD[CUR]);
-const maxL = Math.max(...lA, ...lB) * 1.1;
-const px = i => 4 + i * (W - 8) / 11, py = v => 10 + (1 - v / maxL) * (H - 28);
-const lpath = a => a.map((v, i) => `${i ? 'L' : 'M'}${px(i).toFixed(1)},${py(v).toFixed(1)}`).join('');
-const larea = a => lpath(a) + `L${px(a.length - 1).toFixed(1)},${H - 18}L${px(0)},${H - 18}Z`;
-const vizPace = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
-  <defs><linearGradient id="gC" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${C_CUR}" stop-opacity=".35"/><stop offset="1" stop-color="${C_CUR}" stop-opacity="0"/></linearGradient>
-  <linearGradient id="gP" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${C_PREV}" stop-opacity=".22"/><stop offset="1" stop-color="${C_PREV}" stop-opacity="0"/></linearGradient>
-  <clipPath id="wA"><rect class="wipe" x="0" y="0" width="${W}" height="${H}"/></clipPath><clipPath id="wB"><rect class="wipe d2" x="0" y="0" width="${W}" height="${H}"/></clipPath></defs>
-  <line x1="0" x2="${W}" y1="${H - 18}" y2="${H - 18}" stroke="#273044" vector-effect="non-scaling-stroke"/>
-  <g clip-path="url(#wA)"><path d="${larea(lA)}" fill="url(#gP)"/><path d="${lpath(lA)}" fill="none" stroke="${C_PREV}" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/></g>
-  <g clip-path="url(#wB)"><path d="${larea(lB)}" fill="url(#gC)"/><path d="${lpath(lB)}" fill="none" stroke="${C_CUR}" stroke-width="2.6" vector-effect="non-scaling-stroke" stroke-linejoin="round"/></g>
-</svg>`;
-const keyPace = `<div class="key"><span><i style="background:${C_PREV}"></i>${PREV}</span><span><i style="background:${C_CUR}"></i>${CUR}</span><span>км² за добу, січ → гру</span></div>`;
+// б) Нафтогазові доходи рф: у середньому за місяць, по роках
+const OY = D.oilGasYears?.years || {}, OG = D.oilGas;
+const oilRows = Object.keys(OY).map(Number).filter(y => y < CUR).map(y => ({ yr: y, v: OY[y] / 12 }));
+if (OG?.year === CUR) oilRows.push({ yr: CUR, v: OG.value / OG.months, part: true });
+const HAS_OIL = oilRows.length > 1 && OG?.year === CUR;
+const vizOil = HAS_OIL ? `<svg viewBox="0 0 ${W} ${H}" aria-hidden="true">${bars(oilRows.map(r => r.v), {
+  colors: i => COL(oilRows[i].yr), labels: oilRows.map(r => r.yr), top: oilRows.map(r => dec(r.v, 2)), pad: 10,
+  hl: oilRows.length - 1 })}</svg>` : '';
+const keyOil = `<div class="key"><span>трлн ₽ на місяць, у середньому за рік${HAS_OIL ? ` · ${CUR}: ${OG.period}` : ''}</span></div>`;
 
-// в) Календар: останні 10 тижнів по днях
+// в) Календар: остання доба проти попередньої
+const prevDay = daily.at(-2)?.v, dayUp = last.v >= prevDay;
+const dayPct = prevDay ? Math.round(Math.abs(pct(prevDay, last.v))) : 0;
+const dayBadge = prevDay ? `на ${dayPct}% ${dayUp ? 'більше' : 'менше'}, ніж учора` : '';
+// Календар: останні 10 тижнів по днях
 const WEEKS = 10, lastT = Date.parse(last.d + 'T00:00:00Z');
 const startT = lastT - (((new Date(lastT).getUTCDay() + 6) % 7) + (WEEKS - 1) * 7) * 864e5;
 const cells = []; for (let t = startT, i = 0; i < WEEKS * 7; t += 864e5, i++) cells.push({ d: iso(t), v: t <= lastT ? dayVal.get(iso(t)) : null });
@@ -346,19 +357,19 @@ const vizNpz = `<svg viewBox="0 0 ${W} ${H}" aria-hidden="true">${bars(byM, {
   top: byM.map(n => n === mxM ? n : null), dashedLast: true })}</svg>`;
 
 document.getElementById('cards').innerHTML = [
-  card({ href: 'war.html', tag: 'Ціна 1 км² для рф', num: { n: price26 }, unit: 'військових',
+  card({ href: 'war.html', tag: 'Ціна 1 км² для рф', num: { n: price26 }, unit: 'свинособак/км²',
     badge: priceUp ? `${dec(price26 / price25)}× дорожче` : `${dec(price25 / price26)}× дешевше`, good: priceUp, viz: vizPrice,
-    line: rank === 1 ? `${CUR}-й — <b>найдорожчий рік</b> війни для рф.` : `${CUR}-й — ${rank}-й за ціною рік війни.` }),
-  card({ href: YEAR_HREF, tag: 'Темп наступу рф', num: { n: r26, d: 1 }, unit: 'км² на добу',
-    badge: slower ? `${dec(r25 / r26)}× повільніше` : `${dec(r26 / r25)}× швидше`, good: slower, viz: vizPace, key: keyPace,
-    line: `Торік — ${dec(r25)} км² на добу.` }),
+    line: (rank === 1 ? `${CUR}-й — <b>найдорожчий рік</b> війни для рф.` : `${CUR}-й — ${rank}-й за ціною рік війни.`) + ' Убиті й поранені разом.' }),
+  HAS_OIL && card({ href: YEAR_HREF, tag: 'Нафтогазові доходи рф', num: { n: OG.value / OG.months, d: 2 }, unit: `трлн ₽ на місяць у ${CUR}`,
+    badge: `${OG.changePct < 0 ? '−' : '+'}${Math.abs(OG.changePct)}% до торік`, good: OG.changePct < 0, viz: vizOil, key: keyOil,
+    line: OG.planNew < OG.planOld ? `Мінфін рф урізав план на рік: ${dec(OG.planOld, 2)} → <b>${dec(OG.planNew, 2)}</b> трлн ₽.` : `За ${OG.period} ${CUR}-го — ${dec(OG.value, 2)} трлн ₽.` }),
   card({ href: 'calendar.html', tag: 'Втрати рф з 1 січня', num: { n: p26 }, unit: 'осіб',
-    badge: `${pr26 >= pr25 ? '+' : '−'}${Math.round(Math.abs(pct(pr25, pr26)))}% за добу`, good: pr26 >= pr25, viz: vizCal,
-    line: `Учора — <b>${sp(last.v)}</b>. Найважчий день за 10 тижнів — ${dm(maxCell.d)}, ${sp(maxCell.v)}.` }),
+    badge: dayBadge, tone: dayUp ? 'good' : 'warn', viz: vizCal,
+    line: `За останню добу — <b>${sp(last.v)}</b>. Найкращий для нас день за 10 тижнів — ${dm(maxCell.d)}, ${sp(maxCell.v)}.` }),
   card({ href: 'npz.html', tag: 'Удари по НПЗ рф', num: { n: s26.length }, unit: `влучань у ${CUR}`,
     badge: s25.length && s26.length > s25.length ? `${dec(s26.length / s25.length)}× більше` : '', viz: vizNpz,
     line: `${plants26} ${plural(plants26, ['завод', 'заводи', 'заводів'])} уражено цього року.` }),
-].join('');
+].filter(Boolean).join('');
 
 // ================= 3. ЦИФРА ДНЯ =================
 const libCur = sum([...(D.territory.liberated?.[CUR] || []).slice(0, NF), ...(HAS_P ? [D.territory.partialLiberated?.[CUR]?.value] : [])]);
@@ -372,7 +383,7 @@ const facts = [
   libCur > 1 && { big: sp(libCur) + ' км²', text: `звільнили сили оборони з початку ${CUR}-го.` },
   s26.length && { big: String(s26.length), text: `влучань по НПЗ рф у ${CUR}-му.` },
   oil?.year === CUR && oil.changePct < 0 && { big: `−${Math.abs(oil.changePct)}%`, text: `нафтогазові доходи рф за ${oil.period} проти торішніх.` },
-  recCur.v && { big: sp(recCur.v), text: `втрат рф за одну добу — ${dm(recCur.d)}, найважчий день ${CUR}-го.` },
+  recCur.v && { big: sp(recCur.v), text: `втрат рф за одну добу — ${dm(recCur.d)}, найкращий для нас день ${CUR}-го.` },
 ].filter(Boolean);
 const kyiv = new Date(Date.now() + 2 * 3600e3);
 let fi = Math.floor((Date.UTC(kyiv.getUTCFullYear(), kyiv.getUTCMonth(), kyiv.getUTCDate()) - Date.UTC(kyiv.getUTCFullYear(), 0, 0)) / 864e5) % facts.length;
