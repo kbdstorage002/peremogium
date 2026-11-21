@@ -67,7 +67,8 @@ jobs:
           cp -r assets dist/
           # Мітка версії, щоб браузери не показували вчорашні цифри з кешу
           for page in index.html year.html calendar.html war.html npz.html; do
-            sed -e "s#data/data.js\"#data/data.js?v=$(date -u +%Y%m%d%H%M)\"#" -e "s#data/npz.js\"#data/npz.js?v=$(date -u +%Y%m%d%H%M)\"#" "$page" > "dist/$page"
+            V=$(date -u +%Y%m%d%H%M)
+            sed -E "s#(data/data\.js|data/npz\.js|assets/nav\.css|assets/nav\.js|assets/years\.js)\"#\1?v=$V\"#g" "$page" > "dist/$page"
           done
           find dist -type f
 
