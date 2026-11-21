@@ -314,7 +314,7 @@ document.getElementById('hero').innerHTML = `
 // ================= 2. ЧОТИРИ КАРТКИ-РОЗДІЛИ =================
 const card = ({ href, tag, num, unit, badge, good = true, tone, viz, key = '', line }) => `
   <a class="panel card" href="${href}">
-    <div class="card-top"><span class="tag">${tag}</span><span class="go">Відкрити →</span></div>
+    <div class="card-top"><span class="tag">${tag}</span><span class="go">Подивитись детальніше →</span></div>
     <div class="card-num"><div class="num"><span class="count" data-to="${num.n}" data-d="${num.d || 0}">${num.d ? dec(num.n, num.d) : sp(num.n)}</span><small>${unit}</small></div>${badge ? `<span class="badge ${tone || (good ? '' : 'bad')}">${badge}</span>` : ''}</div>
     <div class="viz">${viz}</div>
     ${key}
