@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-22T08:24:30.747Z",
+  "generatedAt": "2026-11-23T08:54:00.877Z",
   "years": [
     2022,
     2023,
@@ -83,12 +83,12 @@
     "partial": {
       "2026": {
         "month": 11,
-        "value": 46900,
-        "asOf": "2026-11-22"
+        "value": 49371,
+        "asOf": "2026-11-23"
       }
     },
-    "asOf": "2026-11-22",
-    "totalSinceInvasion": 1637170,
+    "asOf": "2026-11-23",
+    "totalSinceInvasion": 1639641,
     "daily": {
       "start": "2022-02-25",
       "values": [
@@ -1822,7 +1822,8 @@
         1970,
         2150,
         1730,
-        2310
+        2310,
+        2471
       ],
       "estimated": [
         0,
@@ -1906,15 +1907,15 @@
     "partial": {
       "2026": {
         "month": 11,
-        "value": 71.3,
-        "asOf": "2026-11-21"
+        "value": 71.9,
+        "asOf": "2026-11-22"
       }
     },
     "partialPrevYear": {
       "2025": {
         "month": 11,
-        "value": 335.7,
-        "asOf": "2025-11-20"
+        "value": 385.2,
+        "asOf": "2025-11-22"
       }
     },
     "gained": {
@@ -2060,19 +2061,19 @@
     "partialGained": {
       "2026": {
         "month": 11,
-        "value": 71.3,
-        "asOf": "2026-11-21"
+        "value": 77.8,
+        "asOf": "2026-11-22"
       }
     },
     "partialLiberated": {
       "2026": {
         "month": 11,
-        "value": 0,
-        "asOf": "2026-11-21"
+        "value": 5.9,
+        "asOf": "2026-11-22"
       }
     },
-    "occupiedNow": 116914.51,
-    "asOf": "2026-11-21",
+    "occupiedNow": 116915.11,
+    "asOf": "2026-11-22",
     "boundaries": {
       "2022-05": {
         "area": 120973.67,
