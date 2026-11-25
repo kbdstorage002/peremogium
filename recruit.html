@@ -1,0 +1,623 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>срекрутинг · Перемогіум</title>
+<meta name="description" content="Скільки росія платить за кожного, хто їде «на СВО»: бонуси, вербувальники, «гробові». Людей дедалі менше, мільйонів дедалі більше. Ринкова економіка.">
+<link rel="canonical" href="https://calmnessuniverse.art/peremogium/recruit.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Перемогіум">
+<meta property="og:locale" content="uk_UA">
+<meta property="og:url" content="https://calmnessuniverse.art/peremogium/recruit.html">
+<meta property="og:title" content="срекрутинг · Перемогіум">
+<meta property="og:description" content="Скільки росія платить за кожного, хто їде «на СВО»: бонуси, вербувальники, «гробові». Людей дедалі менше, мільйонів дедалі більше. Ринкова економіка.">
+<meta property="og:image" content="https://calmnessuniverse.art/peremogium/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Перемогіум — велика картина війни в цифрах">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="data/data.js"></script>
+<script src="data/recruit.js"></script>
+<script src="assets/years.js"></script>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #080a0f; --panel: #0e121a; --panel-2: #131824; --border: #1d2433; --border-2: #273044;
+    --text: #e8ecf3; --text-2: #a9b2c3; --muted: #6b7588; --accent: #5ab0ff;
+    --y2022: #199e70; --y2023: #9085e9; --y2024: #d55181; --y2025: #3987e5; --y2026: #c98500;
+    --good: #2fbf71; --good-bg: rgba(47,191,113,.12); --bad: #f0616d; --bad-bg: rgba(240,97,109,.12);
+    --warn: #e6a23c; --blood: #e0525e;
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --r: 14px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--bg); color: var(--text); font: 15px/1.55 Inter, system-ui, -apple-system, "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased; min-height: 100vh; }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 0 24px; }
+
+  header { padding: 36px 0 26px; border-bottom: 1px solid var(--border); }
+  .logo { display: inline-flex; color: var(--text); text-decoration: none; }
+  .logo svg { height: 26px; width: auto; display: block; }
+  h1 { font-size: clamp(26px, 3.4vw, 36px); line-height: 1.2; margin: 0 0 10px; font-weight: 700; letter-spacing: -.015em; }
+  .sub { color: var(--text-2); max-width: 760px; margin: 0; }
+  .years-legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 16px; font: 12px var(--mono); color: var(--text-2); }
+  .years-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+
+  /* Плашка «відкриті джерела» */
+  .osint { margin-top: 18px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: start; padding: 14px 18px; border-radius: 12px;
+    border: 1px solid rgba(230,162,60,.35); background: rgba(230,162,60,.07); font-size: 13.5px; color: var(--text-2); max-width: 980px; }
+  .osint .ic { font: 600 11px var(--mono); letter-spacing: .08em; color: var(--warn); text-transform: uppercase; border: 1px solid rgba(230,162,60,.45); border-radius: 7px; padding: 4px 8px; white-space: nowrap; }
+  .osint b { color: var(--text); }
+  .kinds { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 8px; font: 12px var(--mono); }
+  .kinds span { white-space: nowrap; }
+
+  section { padding: 34px 0 6px; }
+  .sec-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+  .eyebrow { font: 500 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+  h2 { font-size: 21px; margin: 6px 0 0; font-weight: 650; letter-spacing: -.01em; }
+  .sec-meta { font-size: 12px; color: var(--muted); max-width: 520px; }
+  .panel { background: linear-gradient(180deg, var(--panel-2), var(--panel)); border: 1px solid var(--border); border-radius: var(--r); padding: 18px 20px; min-width: 0; }
+
+  /* KPI */
+  .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+  .kpi-top { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; min-height: 34px; }
+  .kpi-label { font: 500 11px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--text-2); }
+  .badge { font: 600 12px var(--mono); padding: 3px 8px; border-radius: 7px; white-space: nowrap; }
+  .badge.good { color: var(--good); background: var(--good-bg); box-shadow: inset 0 0 0 1px rgba(47,191,113,.3); }
+  .badge.bad { color: var(--bad); background: var(--bad-bg); box-shadow: inset 0 0 0 1px rgba(240,97,109,.3); }
+  .kpi-val { font: 600 30px var(--mono); margin: 8px 0 10px; letter-spacing: -.02em; }
+  .kpi-val .v26 { color: #e3b14f; }
+  .kpi-val small { font: 400 13px Inter, sans-serif; color: var(--text-2); margin-left: 6px; letter-spacing: 0; }
+  .ybars { display: grid; gap: 6px; }
+  .yb { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; gap: 8px; align-items: center; font: 12px var(--mono); color: var(--text-2); }
+  .yb .track { height: 8px; border-radius: 4px; background: rgba(255,255,255,.04); overflow: hidden; }
+  .yb .fill { height: 100%; border-radius: 4px; }
+  .yb b { color: var(--text); font-weight: 600; white-space: nowrap; }
+  .yb.cur b, .yb.cur span:first-child { color: #e3b14f; }
+  .kpi-human { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border-2); font-size: 13px; color: var(--text-2); line-height: 1.45; }
+  .kpi-human b { color: var(--text); }
+  .tagk { font: 500 10px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--border-2); border-radius: 5px; padding: 1px 5px; margin-left: 4px; white-space: nowrap; vertical-align: 1px; }
+  .tagk.est { color: #8cbcf3; border-color: rgba(140,188,243,.35); }
+  .tagk.der { color: var(--warn); border-color: rgba(230,162,60,.4); }
+
+  /* Charts */
+  .charts { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+  .ch-title { font-weight: 600; font-size: 15px; }
+  .ch-sub { font-size: 12px; color: var(--muted); margin: 3px 0 10px; }
+  .chart-box { position: relative; height: 320px; }
+  .explain { margin-top: 12px; padding: 12px 14px; border-radius: 10px; background: rgba(90,176,255,.06); border: 1px solid rgba(90,176,255,.18); font-size: 13.5px; color: var(--text-2); }
+  .explain b { color: var(--text); font-weight: 600; }
+  .explain .lbl { font: 600 11px var(--mono); letter-spacing: .08em; color: var(--accent); text-transform: uppercase; display: block; margin-bottom: 4px; }
+
+  /* П'ять рахунків */
+  .counts { display: grid; gap: 12px; margin-top: 4px; }
+  .cnt { display: grid; grid-template-columns: minmax(0, 1fr); gap: 5px; }
+  .cnt-h { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; color: var(--text); }
+  .cnt-h b { font: 600 14px var(--mono); white-space: nowrap; }
+  .cnt-n { font-size: 11.5px; color: var(--muted); }
+  .cnt .track { height: 12px; border-radius: 6px; background: rgba(255,255,255,.04); overflow: hidden; position: relative; }
+  .cnt .fill { height: 100%; border-radius: 6px; background: var(--y2026); transform-origin: left; }
+  .cnt.plan .fill { background: repeating-linear-gradient(135deg, rgba(201,133,0,.55) 0 6px, rgba(201,133,0,.2) 6px 12px); }
+
+  /* Ціна людини */
+  .life { display: grid; gap: 14px; }
+  .lrow { display: grid; grid-template-columns: 200px minmax(0, 1fr) 92px; gap: 14px; align-items: center; }
+  .lrow .nm { font-size: 14px; color: var(--text); font-weight: 600; line-height: 1.3; }
+  .lrow .nm span { display: block; font: 400 11.5px Inter, sans-serif; color: var(--muted); margin-top: 2px; }
+  .lrow .bar { display: flex; height: 26px; border-radius: 7px; overflow: hidden; background: rgba(255,255,255,.03); }
+  .lrow .seg { height: 100%; display: flex; align-items: center; justify-content: center; font: 600 11px var(--mono); color: rgba(8,10,15,.85); white-space: nowrap; overflow: hidden; border-right: 1px solid rgba(8,10,15,.5); }
+  .lrow .tot { font: 600 16px var(--mono); text-align: right; white-space: nowrap; }
+  .lkey { display: flex; flex-wrap: wrap; gap: 8px 16px; font: 12px var(--mono); color: var(--text-2); margin-top: 4px; }
+  .lkey i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+
+  /* Гантелі: було → стало */
+  .db { display: grid; gap: 11px; }
+  .dbr { display: grid; grid-template-columns: 150px minmax(0, 1fr) 112px; gap: 12px; align-items: center; font-size: 13px; }
+  .dbr .nm { color: var(--text); font-weight: 600; line-height: 1.25; }
+  .dbr .nm span { display: block; font: 400 11px var(--mono); color: var(--muted); }
+  .dbr .ax { position: relative; height: 18px; }
+  .dbr .ax::before { content: ""; position: absolute; left: 0; right: 0; top: 8px; height: 2px; background: rgba(255,255,255,.04); border-radius: 1px; }
+  .dbr .ln { position: absolute; top: 7px; height: 4px; border-radius: 2px; background: linear-gradient(90deg, var(--good), rgba(47,191,113,.25)); }
+  .dbr .dot { position: absolute; top: 3px; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; }
+  .dbr .dot.from { background: #3a4458; box-shadow: 0 0 0 2px #0e121a; }
+  .dbr .dot.to { background: var(--good); box-shadow: 0 0 0 2px #0e121a, 0 0 12px rgba(47,191,113,.5); }
+  .dbr .v { font: 12px var(--mono); color: var(--text-2); text-align: right; white-space: nowrap; }
+  .dbr .v b { color: var(--good); font-weight: 600; }
+  .db-scale { display: grid; grid-template-columns: 150px minmax(0, 1fr) 112px; gap: 12px; font: 10.5px var(--mono); color: var(--muted); margin-top: 2px; }
+  .db-scale div { display: flex; justify-content: space-between; }
+
+  /* Notes */
+  .notes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+  .notes .panel { border-color: rgba(230,162,60,.25); }
+  .h-tag { font: 600 11px var(--mono); letter-spacing: .08em; color: var(--warn); text-transform: uppercase; }
+  .notes h3 { font-size: 15px; margin: 8px 0 6px; }
+  .notes p { margin: 0; font-size: 13px; color: var(--text-2); }
+  .notes p b { color: var(--text); }
+
+  .sources ol { margin: 0; padding-left: 20px; color: var(--text-2); font-size: 13px; }
+  .sources li { margin: 7px 0; }
+  .sources a { color: #8cbcf3; text-decoration: none; border-bottom: 1px solid rgba(140,188,243,.3); }
+  footer { padding: 30px 0 50px; color: var(--muted); font: 12px var(--mono); border-top: 1px solid var(--border); margin-top: 34px; }
+  .err { margin: 40px 0; padding: 20px; border: 1px solid var(--bad); border-radius: var(--r); color: var(--bad); }
+
+  @media (max-width: 1050px) {
+    .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .charts, .notes { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 680px) {
+    .wrap { padding: 0 16px; }
+    .kpis { grid-template-columns: minmax(0, 1fr); }
+    .chart-box { height: 270px; }
+    .kpi-val { font-size: 26px; }
+    .osint { grid-template-columns: minmax(0, 1fr); }
+    .osint .ic { justify-self: start; }
+    .lrow { grid-template-columns: minmax(0, 1fr) auto; gap: 6px 10px; }
+    .lrow .bar { grid-column: 1 / -1; grid-row: 2; }
+    .lrow .tot { grid-row: 1; grid-column: 2; }
+    .dbr, .db-scale { grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; }
+    .dbr .ax, .db-scale > div:nth-child(2) { grid-column: 1 / -1; grid-row: 2; }
+    .db-scale > div:first-child, .db-scale > div:last-child { display: none; }
+  }
+</style>
+<link rel="stylesheet" href="assets/nav.css">
+<script src="/analytics.js" defer></script>
+<script src="/home.js" defer></script>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="brand-row">
+    <a class="logo" href="./" aria-label="Перемогіум — на головну"><!--logo:start--><svg viewBox="6.5 -76.7 903.9 78.4" aria-hidden="true" focusable="false"><path fill="currentColor" d="M6.50-75L87.80-75L87.80 0L64.50 0L64.50-54.40L29.80-54.40L29.80 0L6.50 0L6.50-75ZM129.20-45.70L170.30-45.70L170.30-29.30L129.20-29.30L127.40-18.60L173.80-18.60L173.80 0L102.70 0L108.30-37.50L102.70-75L173.30-75L173.30-56.40L127.40-56.40L129.20-45.70ZM189.10-75L232.00-75Q241.80-75 248.85-71.70Q255.90-68.40 259.60-62.45Q263.30-56.50 263.30-48.40L263.30-48.40Q263.30-40.40 259.60-34.40Q255.90-28.40 248.85-25.10Q241.80-21.80 232.00-21.80L232.00-21.80L212.40-21.80L212.40 0L189.10 0L189.10-75ZM212.40-56.60L212.40-40.20L230.50-40.20Q234.90-40.20 237.35-42.40Q239.80-44.60 239.80-48.40L239.80-48.40Q239.80-52.40 237.35-54.50Q234.90-56.60 230.50-56.60L230.50-56.60L212.40-56.60ZM300-45.70L341.10-45.70L341.10-29.30L300-29.30L298.20-18.60L344.60-18.60L344.60 0L273.50 0L279.10-37.50L273.50-75L344.10-75L344.10-56.40L298.20-56.40L300-45.70ZM436.50-75L472.50-75L472.50 0L450.30 0L450.30-54.70L427.80 0L404.60 0L382.00-54.60L382.00 0L359.90 0L359.90-75L395.80-75L416.20-23.10L436.50-75ZM531.40 1.70L531.40 1.70Q517.90 1.70 507.75-3.20Q497.60-8.10 491.95-16.90Q486.30-25.70 486.30-37.50L486.30-37.50Q486.30-49.30 491.95-58.10Q497.60-66.90 507.75-71.80Q517.90-76.70 531.40-76.70L531.40-76.70Q544.90-76.70 555.05-71.80Q565.20-66.90 570.85-58.10Q576.50-49.30 576.50-37.50L576.50-37.50Q576.50-25.70 570.85-16.90Q565.20-8.10 555.05-3.20Q544.90 1.70 531.40 1.70ZM531.40-19L531.40-19Q538.10-19 542.95-21.25Q547.80-23.50 550.40-27.65Q553-31.80 553-37.50L553-37.50Q553-43.20 550.40-47.35Q547.80-51.50 542.95-53.75Q538.10-56 531.40-56L531.40-56Q524.70-56 519.85-53.75Q515-51.50 512.40-47.35Q509.80-43.20 509.80-37.50L509.80-37.50Q509.80-31.80 512.40-27.65Q515-23.50 519.85-21.25Q524.70-19 531.40-19ZM590.40-75L648.90-75L648.90-54.30L613.70-54.30L613.70 0L590.40 0L590.40-75ZM661.40 0L661.40-75L684.70-75L684.70 0L661.40 0ZM744.60 0L719.50 0L728.90-16.50L695.30-75L720.90-75L741.70-38.50L762.30-75L787.40-75L744.60 0ZM874.40-75L910.40-75L910.40 0L888.20 0L888.20-54.70L865.70 0L842.50 0L819.90-54.60L819.90 0L797.80 0L797.80-75L833.70-75L854.10-23.10L874.40-75Z"/></svg><!--logo:end--></a>
+    <span class="pill">🧪 Експеримент. Не є офіційним джерелом.</span>
+    <nav class="tabs" aria-label="Розділи">
+      <a href="./">Головна</a>
+      <a href="year.html">2026 проти 2025</a>
+      <a href="war.html">2026 проти всієї війни</a>
+      <a href="calendar.html">Календар втрат</a>
+      <a href="npz.html">НПЗдець</a>
+      <a href="recruit.html" class="on" aria-current="page">срекрутинг</a>
+    </nav>
+  </div>
+  <h1>срекрутинг</h1>
+  <p class="sub">Скільки росія платить, щоб замінити тих, кого втрачає на фронті: бонуси за контракт, гроші вербувальникам, виплати за поранення й загибель. І скільки людей вона за ці гроші отримує.</p>
+  <div class="osint">
+    <span class="ic">Відкриті джерела</span>
+    <div>Росія <b>не публікує статистику вербування</b>. Усі цифри тут — з відкритих джерел: бюджетна звітність рф, заяви російських посадовців, оцінки незалежних дослідників і журналістів, дані Генштабу ЗСУ й DeepState. Різні джерела дають різні числа, тож ми показуємо діапазон і позначаємо, чия це цифра:
+      <div class="kinds"><span><span class="tagk">факт</span> опубліковано як є</span><span><span class="tagk est">оцінка</span> дослідника чи журналістів</span><span><span class="tagk der">розрахунок</span> наш, з чужих цифр</span></div>
+    </div>
+  </div>
+  <div class="years-legend" id="yearsLegend"></div>
+</header>
+
+<section>
+  <div class="sec-head">
+    <div><div class="eyebrow">Секція 01 • Головне</div><h2>Рік до року в чотирьох цифрах</h2></div>
+    <div class="sec-meta" id="kpiMeta"></div>
+  </div>
+  <div class="kpis" id="kpis"></div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div><div class="eyebrow">Секція 02 • Обсяги</div><h2>Скільки людей підписали контракт</h2></div>
+  </div>
+  <div class="charts">
+    <div class="panel">
+      <div class="ch-title">Графік А: Набір наростаючим підсумком</div>
+      <div class="ch-sub">Тис. людей, які отримали федеральний бонус 400 тис. ₽ за контракт <span class="tagk">факт</span> · бюджет рф через «Важные истории»</div>
+      <div class="chart-box"><canvas id="chA"></canvas></div>
+      <div class="explain" id="explainA"></div>
+    </div>
+    <div class="panel">
+      <div class="ch-title">Графік Б: П'ять рахунків одного набору у <span class="cy"></span>-му</div>
+      <div class="ch-sub">Скільки людей підписали контракт з 1 січня, за різними джерелами</div>
+      <div class="counts" id="counts"></div>
+      <div class="explain" id="explainB"></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div><div class="eyebrow">Секція 03 • Гроші</div><h2>Людей менше, грошей більше</h2></div>
+  </div>
+  <div class="charts">
+    <div class="panel">
+      <div class="ch-title">Графік В: Середній бонус за контракт</div>
+      <div class="ch-sub">Млн ₽, регіональна виплата «за відправку на фронт» у середньому по регіонах; федеральні 400 тис. — окремо</div>
+      <div class="chart-box"><canvas id="chC"></canvas></div>
+      <div class="explain" id="explainC"></div>
+    </div>
+    <div class="panel">
+      <div class="ch-title">Графік Г: Що змінилося за рік</div>
+      <div class="ch-sub">Зміна <span class="cy"></span> проти <span class="py"></span>, % (однакові періоди)</div>
+      <div class="chart-box"><canvas id="chD"></canvas></div>
+      <div class="explain" id="explainD"></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div><div class="eyebrow">Секція 04 • Баланс</div><h2>Чи встигає набір за втратами</h2></div>
+    <div class="sec-meta">Втрати — щоденні зведення Генштабу ЗСУ (убиті й поранені разом), територія — DeepState. Ці дані оновлюються щодня, набір — коли виходить нова оцінка.</div>
+  </div>
+  <div class="charts">
+    <div class="panel">
+      <div class="ch-title">Графік Ґ: Прийшло проти вибуло</div>
+      <div class="ch-sub">Тис. осіб за <span class="per"></span>: підписали контракт <span class="tagk est">оцінка</span> і втрати рф за Генштабом ЗСУ</div>
+      <div class="chart-box"><canvas id="chE"></canvas></div>
+      <div class="explain" id="explainE"></div>
+    </div>
+    <div class="panel">
+      <div class="ch-title">Графік Д: Скільки рекрутів «коштує» один км²</div>
+      <div class="ch-sub">Нових контрактників на 1 км² чистого просування рф за <span class="per"></span> <span class="tagk der">розрахунок</span></div>
+      <div class="chart-box"><canvas id="chF"></canvas></div>
+      <div class="explain" id="explainF"></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div><div class="eyebrow">Секція 05 • Тариф</div><h2>Скільки держава платить за одну людину</h2></div>
+    <div class="sec-meta">Федеральні виплати 2026 року, млн ₽. Регіони платять ще зверху, але дедалі менше (секція 06).</div>
+  </div>
+  <div class="panel">
+    <div class="life" id="life"></div>
+    <div class="lkey" id="lifeKey"></div>
+    <div class="explain" id="explainLife"></div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div><div class="eyebrow">Секція 06 • Регіони</div><h2>Гроші закінчуються: хто урізав виплати</h2></div>
+    <div class="sec-meta" id="deficitMeta"></div>
+  </div>
+  <div class="charts">
+    <div class="panel">
+      <div class="ch-title">За підписання контракту</div>
+      <div class="ch-sub">Регіональна частина виплати, млн ₽: <span style="color:#7d889c">●</span> було → <span style="color:var(--good)">●</span> стало <span class="tagk">факт</span></div>
+      <div class="db" id="dbSign"></div>
+    </div>
+    <div class="panel">
+      <div class="ch-title">Родині загиблого</div>
+      <div class="ch-sub">Регіональна одноразова виплата, млн ₽ (федеральні не змінилися) <span class="tagk">факт</span></div>
+      <div class="db" id="dbDeath"></div>
+    </div>
+  </div>
+  <div class="explain" id="explainCuts" style="margin-top:14px"></div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div><div class="eyebrow" style="color:var(--warn)">Секція 07 • Чесно</div><h2>Як читати ці цифри</h2></div>
+  </div>
+  <div class="notes" id="notes"></div>
+</section>
+
+<section class="sources">
+  <div class="sec-head"><div><div class="eyebrow">Секція 08 • Джерела</div><h2>Звідки цифри</h2></div></div>
+  <div class="panel"><ol id="sources"></ol></div>
+</section>
+
+<footer id="footer"></footer>
+</div>
+
+<script>
+(() => {
+const R = window.RECRUIT_DATA, D = window.PEREMOGIUM_DATA;
+if (!R || !D) {
+  document.querySelector('.wrap').insertAdjacentHTML('afterbegin', '<div class="err">Не вдалося завантажити дані (data/recruit.js або data/data.js).</div>');
+  return;
+}
+const CUR = R.cur, PREV = R.prev, K = R.kluge, NM = K.months;
+const MGEN = ['січня','лютого','березня','квітня','травня','червня','липня','серпня','вересня','жовтня','листопада','грудня'];
+const MLOC = ['січні','лютому','березні','квітні','травні','червні','липні','серпні','вересні','жовтні','листопаді','грудні'];
+const MNOM = ['січень','лютий','березень','квітень','травень','червень','липень','серпень','вересень','жовтень','листопад','грудень'];
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const COLOR = y => css('--y' + y) || '#5ab0ff';
+const sp = n => Math.round(n).toLocaleString('en-US').replace(/,/g, ' ');
+const dec = (n, d = 1) => n.toFixed(d).replace('.', ',');
+const th = n => sp(n / 1000) + ' тис.';
+const pctCh = (a, b) => (b / a - 1) * 100;
+const sgn = p => (p >= 0 ? '+' : '−') + Math.abs(Math.round(p)) + '%';
+const dateUA = iso => { const [y, m, d] = iso.slice(0, 10).split('-').map(Number); return `${d} ${MGEN[m - 1]} ${y}`; };
+const sum = a => a.reduce((s, v) => s + (v || 0), 0);
+const PER = `січень–${MNOM[NM - 1]}`;
+document.querySelectorAll('.cy').forEach(e => e.textContent = CUR);
+document.querySelectorAll('.py').forEach(e => e.textContent = PREV);
+document.querySelectorAll('.per').forEach(e => e.textContent = `${PER}`);
+
+// ================= ДАНІ =================
+const rec = { [PREV]: K['y' + PREV], [CUR]: K['y' + CUR] };
+const loss = y => sum((D.personnel.monthly[y] || []).slice(0, NM));
+const km = y => sum((D.territory.monthly[y] || []).slice(0, NM));
+const L = { [PREV]: loss(PREV), [CUR]: loss(CUR) }, T = { [PREV]: km(PREV), [CUR]: km(CUR) };
+const cover = y => rec[y] / L[y] * 100;
+const perKm = y => T[y] > 0 ? rec[y] / T[y] : null;
+const B = R.bonus, bonusNow = B.avg.at(-1).v, bonusYearAgo = B.avg.at(-2).v;
+const regSpend = y => rec[y] * B.avgYear[y] / 1000;            // млрд ₽ (тис. осіб × млн ₽)
+const plan = R.counts2026.find(c => c.plan).v;
+const monthsLeft = 12 - NM, needPerMonth = (plan - K['y' + CUR]) / monthsLeft;
+
+document.getElementById('yearsLegend').innerHTML = [PREV, CUR].map(y => `<span><i style="background:${COLOR(y)}"></i>${y}${y === CUR ? ' (поточний)' : ''}</span>`).join('');
+document.getElementById('kpiMeta').textContent = `Набір — оцінка на кінець ${MGEN[NM - 1]} ${CUR}; втрати й територія — за той самий період, ${PER}`;
+
+// ================= KPI =================
+function bars(rows, fmtV) {
+  const mx = Math.max(...rows.map(r => r.v), 1e-9);
+  return `<div class="ybars">${rows.map(({ y, v }) => `<div class="yb${y === CUR ? ' cur' : ''}"><span>${y}</span><div class="track"><div class="fill" style="width:${v / mx * 100}%;background:${COLOR(y)}"></div></div><b>${fmtV(v)}</b></div>`).join('')}</div>`;
+}
+function card({ label, badge, tone = 'good', val, unit, body, human }) {
+  return `<div class="panel">
+    <div class="kpi-top"><div class="kpi-label">${label}</div>${badge ? `<span class="badge ${tone}">${badge}</span>` : ''}</div>
+    <div class="kpi-val"><span class="v26">${val}</span><small>${unit}</small></div>
+    ${body}<div class="kpi-human">${human}</div></div>`;
+}
+const recCh = pctCh(rec[PREV], rec[CUR]);
+const pk = { [PREV]: perKm(PREV), [CUR]: perKm(CUR) };
+document.getElementById('kpis').innerHTML = [
+  card({
+    label: `Набір, ${K.period}`, badge: sgn(recCh), tone: recCh < 0 ? 'good' : 'bad',
+    val: th(rec[CUR]), unit: 'контрактів',
+    body: bars([PREV, CUR].map(y => ({ y, v: rec[y] })), v => th(v)),
+    human: `Це <b>≈${sp(rec[CUR] / (NM * 30.4))} людей на день</b>. Торік за той самий період — ${th(rec[PREV])} Оцінка Клюге за бюджетами регіонів <span class="tagk est">оцінка</span>`,
+  }),
+  card({
+    label: 'Середній бонус за контракт', badge: sgn(pctCh(bonusYearAgo, bonusNow)), tone: 'good',
+    val: dec(bonusNow, 1), unit: 'млн ₽ від регіону',
+    body: bars([{ y: PREV, v: bonusYearAgo }, { y: CUR, v: bonusNow }], v => dec(v, 1) + ' млн'),
+    human: `Плюс <b>400 тис. ₽</b> від федерального бюджету. Рік тому регіони платили в середньому ≈${dec(bonusYearAgo, 1)} млн <span class="tagk der">розрахунок</span>`,
+  }),
+  card({
+    label: 'Набір покриває втрати на', badge: `було ${Math.round(cover(PREV))}%`, tone: cover(CUR) < cover(PREV) ? 'good' : 'bad',
+    val: Math.round(cover(CUR)) + '%', unit: `у ${CUR}`,
+    body: bars([PREV, CUR].map(y => ({ y, v: cover(y) })), v => Math.round(v) + '%'),
+    human: `За ${PER} рф втратила <b>${th(L[CUR])}</b> (Генштаб ЗСУ), а набрала ${th(rec[CUR])} Різниця — <b>${th(L[CUR] - rec[CUR])}</b> <span class="tagk der">розрахунок</span>`,
+  }),
+  card({
+    label: 'Рекрутів на 1 км²', badge: pk[PREV] && pk[CUR] ? `×${dec(pk[CUR] / pk[PREV])}` : '', tone: 'good',
+    val: pk[CUR] ? sp(pk[CUR]) : '—', unit: 'контрактників',
+    body: bars([PREV, CUR].map(y => ({ y, v: pk[y] || 0 })), v => sp(v)),
+    human: `Щоб просунутися на один км², рф цього року набирає <b>${pk[PREV] && pk[CUR] ? dec(pk[CUR] / pk[PREV]) + ' раза' : ''} більше</b> людей, ніж торік <span class="tagk der">розрахунок</span>`,
+  }),
+].join('');
+
+// ================= ГРАФІКИ: спільне =================
+Chart.defaults.color = css('--muted');
+Chart.defaults.font.family = 'JetBrains Mono, ui-monospace, monospace';
+Chart.defaults.font.size = 11;
+const gridC = 'rgba(255,255,255,.05)';
+const tip = {
+  backgroundColor: '#0b0f17', borderColor: '#273044', borderWidth: 1, padding: 10, cornerRadius: 8,
+  titleColor: '#e8ecf3', bodyColor: '#a9b2c3', titleFont: { family: 'Inter', weight: '600', size: 12 },
+  bodyFont: { family: 'JetBrains Mono', size: 12 }, boxPadding: 4,
+};
+const legend = { display: true, position: 'top', align: 'end', labels: { boxWidth: 10, boxHeight: 10, useBorderRadius: true, borderRadius: 3, color: '#a9b2c3' } };
+// Підписи значень над точками/стовпчиками
+const valueLabels = {
+  id: 'valueLabels',
+  afterDatasetsDraw(chart, _, opts) {
+    const { ctx } = chart;
+    chart.data.datasets.forEach((ds, di) => {
+      const meta = chart.getDatasetMeta(di);
+      if (meta.hidden || ds.noLabels) return;
+      meta.data.forEach((el, i) => {
+        const v = ds.data[i]; if (v == null) return;
+        const txt = (opts.fmt || (x => x))(v, ds, i);
+        ctx.save();
+        ctx.font = '600 11px JetBrains Mono, monospace';
+        ctx.fillStyle = ds.labelColor || '#e8ecf3';
+        const horiz = chart.options.indexAxis === 'y';
+        if (horiz) { ctx.textBaseline = 'middle'; ctx.textAlign = v >= 0 ? 'left' : 'right'; ctx.fillText(txt, el.x + (v >= 0 ? 6 : -6), el.y); }
+        else if (ds.labelBelow) { ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillText(txt, el.x, el.y + 9); }
+        else { ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillText(txt, el.x, el.y - 6); }
+        ctx.restore();
+      });
+    });
+  },
+};
+
+// ================= А: наростаючим підсумком (федеральні бонуси) =================
+const F = R.federal, QL = ['I кв.', 'I півріччя', '9 місяців', 'рік'], QK = ['q1', 'h1', 'm9', 'y'];
+new Chart(document.getElementById('chA'), {
+  type: 'line',
+  data: { labels: QL, datasets: [PREV, CUR].map(y => ({
+    label: String(y), data: QK.map(k => F[y]?.[k] ?? null), borderColor: COLOR(y), backgroundColor: COLOR(y),
+    borderWidth: y === CUR ? 3 : 2, pointRadius: 5, pointHoverRadius: 7, tension: .25, spanGaps: false,
+    labelColor: y === CUR ? '#e3b14f' : '#8cbcf3', labelBelow: y === PREV,
+  })) },
+  options: {
+    maintainAspectRatio: false, layout: { padding: { top: 20 } },
+    plugins: { legend, valueLabels: { fmt: v => dec(v, 0) }, tooltip: { ...tip, callbacks: { label: c => ` ${c.dataset.label}: ${dec(c.raw, 1)} тис.` } } },
+    scales: { x: { grid: { display: false }, border: { color: '#273044' } }, y: { grid: { color: gridC }, border: { display: false }, beginAtZero: true, ticks: { maxTicksLimit: 6 } } },
+  },
+  plugins: [valueLabels],
+});
+const m9ch = pctCh(F[PREV].m9, F[CUR].m9);
+document.getElementById('explainA').innerHTML = `<span class="lbl">Людською мовою</span>
+  За дев'ять місяців ${CUR}-го федеральний бонус отримали <b>${dec(F[CUR].m9, 1)} тис.</b> людей — на <b>${Math.abs(Math.round(m9ch))}% менше</b>, ніж торік (${dec(F[PREV].m9, 1)} тис.).
+  Це найточніший, але й найнижчий рахунок: бонус не отримують, наприклад, ув'язнені, які підписують контракт із колонії. Дані виходять із запізненням на півтора місяця, тому IV квартал ${CUR}-го ще порожній.`;
+
+// ================= Б: п'ять рахунків =================
+const mxC = Math.max(...R.counts2026.map(c => c.v));
+const kindTag = k => k === 'fact' ? '<span class="tagk">факт</span>' : k === 'estimate' ? '<span class="tagk est">оцінка</span>' : '<span class="tagk der">розрахунок</span>';
+document.getElementById('counts').innerHTML = R.counts2026.map(c => `<div class="cnt${c.plan ? ' plan' : ''}">
+  <div class="cnt-h"><span>${c.who} ${kindTag(c.kind)}</span><b>${th(c.v)}</b></div>
+  <div class="track"><div class="fill" style="width:${c.v / mxC * 100}%"></div></div>
+  <div class="cnt-n">${c.to} · ${c.note}</div></div>`).join('');
+document.getElementById('explainB').innerHTML = `<span class="lbl">Людською мовою</span>
+  Російські посадовці зазвичай називають цифри на <b>10–15% вищі</b>, ніж видно з бюджетів, бо рахують і тих, хто не отримує бонус. Але навіть за їхнім рахунком до плану не вистачає:
+  щоб набрати ${th(plan)} до кінця року, за ${monthsLeft} ${monthsLeft === 1 ? 'місяць' : 'місяці'} треба підписати ще ${th(plan - K['y' + CUR])} — <b>≈${th(needPerMonth)} на місяць</b>, тоді як у ${MLOC[NM - 1]} підписали ${th(K.oct[CUR])}`;
+
+// ================= В: середній бонус =================
+new Chart(document.getElementById('chC'), {
+  type: 'line',
+  data: { labels: B.avg.map(p => p.label), datasets: [
+    { label: 'Регіональний бонус', data: B.avg.map(p => p.v), borderColor: '#e3b14f', backgroundColor: 'rgba(201,133,0,.14)', fill: true, borderWidth: 3, pointRadius: 6, pointHoverRadius: 8, tension: .3,
+      pointBackgroundColor: B.avg.map(p => p.kind === 'derived' ? '#0e121a' : '#e3b14f'), pointBorderColor: '#e3b14f', pointBorderWidth: 2, labelColor: '#e3b14f' },
+    { label: 'Федеральний бонус', data: B.avg.map(() => B.federal), borderColor: '#6b7588', borderDash: [5, 5], borderWidth: 2, pointRadius: 0, noLabels: true },
+  ] },
+  options: {
+    maintainAspectRatio: false, layout: { padding: { top: 22 } },
+    plugins: { legend, valueLabels: { fmt: v => dec(v, 1) }, tooltip: { ...tip, callbacks: {
+      label: c => ` ${c.dataset.label}: ${dec(c.raw, 2)} млн ₽`,
+      afterLabel: c => c.datasetIndex === 0 && B.avg[c.dataIndex].kind === 'derived' ? ' розрахунок з відсотків Клюге' : '',
+    } } },
+    scales: { x: { grid: { display: false }, border: { color: '#273044' } }, y: { grid: { color: gridC }, border: { display: false }, beginAtZero: true, ticks: { maxTicksLimit: 6, callback: v => v + ' млн' } } },
+  },
+  plugins: [valueLabels],
+});
+document.getElementById('explainC').innerHTML = `<span class="lbl">Людською мовою</span>
+  Середній регіональний бонус за рік виріс на <b>≈${sp((bonusNow - bonusYearAgo) * 1000)} тис. ₽ (+${Math.round(pctCh(bonusYearAgo, bonusNow))}%)</b>, а з початку ${PREV}-го — на 60%. Тобто людей просто перекуповують дорожче.
+  Порожні точки — наш розрахунок із відсотків Клюге; останню точку він назвав сам. Інша оцінка Клюге (через Радіо Свобода) — 1,65 млн у серпні ${CUR}: методики різняться, напрям той самий.`;
+
+// ================= Г: що змінилося за рік =================
+const ch = [
+  { k: 'Набір', v: recCh, kind: 'оцінка' },
+  { k: 'Втрати рф', v: pctCh(L[PREV], L[CUR]), kind: 'щоденні дані' },
+  { k: 'Середній бонус', v: pctCh(B.avgYear[PREV], B.avgYear[CUR]), kind: 'розрахунок' },
+  { k: 'Бонуси, усього', v: pctCh(regSpend(PREV), regSpend(CUR)), kind: 'розрахунок' },
+  { k: 'Вербувальникам', v: pctCh(R.recruiters[PREV], R.recruiters[CUR]), kind: 'оцінка' },
+];
+new Chart(document.getElementById('chD'), {
+  type: 'bar',
+  data: { labels: ch.map(c => c.k), datasets: [{ data: ch.map(c => +c.v.toFixed(1)), backgroundColor: ch.map(c => c.v < 0 ? 'rgba(57,135,229,.85)' : 'rgba(201,133,0,.85)'), borderRadius: 4, barPercentage: .7,
+    labelColor: '#e8ecf3' }] },
+  options: {
+    indexAxis: 'y', maintainAspectRatio: false, layout: { padding: { right: 46, left: 4 } },
+    plugins: { legend: { display: false }, valueLabels: { fmt: v => sgn(v) }, tooltip: { ...tip, callbacks: { label: c => ` ${sgn(c.raw)} · ${ch[c.dataIndex].kind}` } } },
+    scales: { x: { grid: { color: gridC }, border: { display: false }, suggestedMin: -40, ticks: { callback: v => v + '%' } }, y: { grid: { display: false }, border: { color: '#273044' }, ticks: { color: '#a9b2c3', font: { family: 'Inter', size: 12 } } } },
+  },
+  plugins: [valueLabels],
+});
+document.getElementById('explainD').innerHTML = `<span class="lbl">Людською мовою</span>
+  Синє — зменшилося, жовте — зросло. Людей прийшло на <b>${Math.abs(Math.round(recCh))}% менше</b>, а регіони на бонуси витратили приблизно на ${Math.round(pctCh(regSpend(PREV), regSpend(CUR)))}% більше: ≈${sp(regSpend(PREV))} → <b>≈${sp(regSpend(CUR))} млрд ₽</b> за ${PER} <span class="tagk der">розрахунок: набір × середній бонус</span>.
+  Вербувальникам регіони платять у ${dec(R.recruiters[CUR] / R.recruiters[PREV])} раза більше: ${R.recruiters[PREV]} → <b>${R.recruiters[CUR]} млн ₽ на місяць</b> (${R.recruiters.note.toLowerCase()}).`;
+
+// ================= Ґ: прийшло проти вибуло =================
+const LOSS_RED = '#ff1f3d';
+// ☠️ по центру стовпчиків «втрати»
+const skullPlugin = {
+  id: 'skull',
+  afterDatasetsDraw(chart) {
+    const { ctx } = chart;
+    chart.data.datasets.forEach((ds, di) => {
+      const meta = chart.getDatasetMeta(di);
+      if (!ds.skull || meta.hidden) return;
+      meta.data.forEach(el => {
+        const size = Math.min(44, Math.max(22, el.width * .55));
+        ctx.save(); ctx.font = `${size}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('☠️', el.x, (el.y + el.base) / 2); ctx.restore();
+      });
+    });
+  },
+};
+new Chart(document.getElementById('chE'), {
+  type: 'bar',
+  data: { labels: [String(PREV), String(CUR)], datasets: [
+    { label: 'Підписали контракт', data: [rec[PREV] / 1000, rec[CUR] / 1000], backgroundColor: [COLOR(PREV), COLOR(CUR)], borderRadius: 4, barPercentage: .8, categoryPercentage: .7 },
+    { label: 'Втрати (Генштаб ЗСУ)', data: [L[PREV] / 1000, L[CUR] / 1000], backgroundColor: LOSS_RED, skull: true, borderRadius: 4, barPercentage: .8, categoryPercentage: .7 },
+  ] },
+  options: {
+    maintainAspectRatio: false, layout: { padding: { top: 22 } },
+    plugins: { legend: { ...legend, labels: { ...legend.labels, generateLabels: () => [
+      { text: 'Підписали контракт', fillStyle: COLOR(CUR), strokeStyle: 'transparent', fontColor: '#a9b2c3' },
+      { text: 'Втрати (Генштаб ЗСУ)', fillStyle: LOSS_RED, strokeStyle: 'transparent', fontColor: '#a9b2c3' }] } },
+      valueLabels: { fmt: v => sp(v) }, tooltip: { ...tip, callbacks: { label: c => ` ${c.dataset.label}: ${sp(c.raw)} тис.` } } },
+    scales: { x: { grid: { display: false }, border: { color: '#273044' }, ticks: { font: { size: 13, weight: '600' } } }, y: { grid: { color: gridC }, border: { display: false }, beginAtZero: true, ticks: { maxTicksLimit: 6 } } },
+  },
+  plugins: [valueLabels, skullPlugin],
+});
+const gap = y => L[y] - rec[y];
+document.getElementById('explainE').innerHTML = `<span class="lbl">Людською мовою</span>
+  У ${PREV}-му набір майже встигав за втратами (${Math.round(cover(PREV))}%). У ${CUR}-му втрати зросли, а набір упав, і розрив збільшився з ${th(gap(PREV))} до <b>${th(gap(CUR))}</b>
+  Обережно: Генштаб рахує вбитих і поранених разом, а частина поранених повертається в стрій. Тому це не «мінус ${th(gap(CUR))} солдатів», а тренд: <b>армія рф поповнюється повільніше, ніж стікає кров'ю</b>.`;
+
+// ================= Д: рекрутів на км² =================
+const kmRows = [PREV, CUR].map(y => ({ y, v: perKm(y), spend: T[y] > 0 ? regSpend(y) * 1000 / T[y] : null }));
+new Chart(document.getElementById('chF'), {
+  type: 'bar',
+  data: { labels: kmRows.map(r => String(r.y)), datasets: [{ data: kmRows.map(r => r.v ? Math.round(r.v) : null), backgroundColor: kmRows.map(r => COLOR(r.y)), borderRadius: 5, barPercentage: .55 }] },
+  options: {
+    maintainAspectRatio: false, layout: { padding: { top: 22 } },
+    plugins: { legend: { display: false }, valueLabels: { fmt: v => sp(v) + ' осіб' }, tooltip: { ...tip, callbacks: {
+      label: c => ` ${sp(c.raw)} контрактників на км²`,
+      afterLabel: c => { const r = kmRows[c.dataIndex]; return ` ${sp(T[r.y])} км² · ≈${sp(r.spend)} млн ₽ бонусів на км²`; } } } },
+    scales: { x: { grid: { display: false }, border: { color: '#273044' }, ticks: { font: { size: 13, weight: '600' } } }, y: { grid: { color: gridC }, border: { display: false }, beginAtZero: true, ticks: { maxTicksLimit: 6 } } },
+  },
+  plugins: [valueLabels],
+});
+document.getElementById('explainF').innerHTML = T[CUR] > 0 ? `<span class="lbl">Людською мовою</span>
+  За ${PER} рф просунулася на ${sp(T[PREV])} км² у ${PREV}-му і лише на <b>${sp(T[CUR])} км²</b> у ${CUR}-му. Тож кожен км² цього року «коштує» <b>${sp(perKm(CUR))} нових контрактників</b> проти ${sp(perKm(PREV))} торік.
+  У грошах — ≈${sp(kmRows[1].spend)} млн ₽ регіональних бонусів на км² (торік ≈${sp(kmRows[0].spend)} млн). Подивитися ціну км² у втратах — <a class="more" style="margin:0" href="war.html">${CUR} проти всієї війни →</a>` : 'Даних про територію за цей період ще немає.';
+
+// ================= Тариф на людину =================
+const SEGC = ['#e3b14f', '#c98500', '#8a6a2e'];
+const death = R.perPerson.death, deathSum = sum(death.map(d => d.v));
+const signTot = B.federal + bonusNow;
+const lifeRows = [
+  { nm: 'Підписав контракт', sub: 'федеральний + середній регіональний бонус', segs: [{ v: B.federal, c: '#6b7588', t: 'фед.' }, { v: bonusNow, c: COLOR(CUR), t: 'регіон' }] },
+  { nm: 'Легке поранення', sub: 'президентська виплата, без страхової', segs: [{ v: R.perPerson.injuryLight, c: '#9085e9' }] },
+  { nm: 'Важке поранення', sub: 'президентська виплата, без страхової', segs: [{ v: R.perPerson.injuryHeavy, c: '#9085e9' }] },
+  { nm: 'Загинув', sub: 'три федеральні виплати родині', segs: death.map((d, i) => ({ v: d.v, c: ['#e0525e', '#b8404b', '#8c3039'][i] })) },
+];
+const lifeMax = deathSum;
+document.getElementById('life').innerHTML = lifeRows.map(r => { const tot = sum(r.segs.map(s => s.v)); return `<div class="lrow">
+  <div class="nm">${r.nm}<span>${r.sub}</span></div>
+  <div class="bar" style="width:${tot / lifeMax * 100}%">${r.segs.map(s => `<div class="seg" style="flex:${s.v};background:${s.c}">${s.v / lifeMax > .09 ? dec(s.v, s.v % 1 ? 1 : 0) : ''}</div>`).join('')}</div>
+  <div class="tot">${dec(tot, 1)} млн</div></div>`; }).join('');
+document.getElementById('lifeKey').innerHTML = death.map((d, i) => `<span><i style="background:${['#e0525e', '#b8404b', '#8c3039'][i]}"></i>${d.k}: ${dec(d.v, 2)}</span>`).join('');
+const kpm = R.killedPerMonth2026, deathMonth = kpm * deathSum / 1000, signMonth = rec[CUR] / NM * signTot / 1000;
+document.getElementById('explainLife').innerHTML = `<span class="lbl">Людською мовою</span>
+  Загибель одного військового обходиться федеральному бюджету в <b>${dec(deathSum, 1)} млн ₽</b> — у <b>${dec(deathSum / signTot)} раза</b> дорожче, ніж його вербування.
+  Дуже грубо: якщо, як оцінює Клюге за виплатами в 17 регіонах, щомісяця гине ≈${th(kpm)} військових, то «гробові» — це ≈${sp(deathMonth)} млрд ₽ на місяць, тоді як бонуси за ≈${th(rec[CUR] / NM)} нових контрактів — ≈${sp(signMonth)} млрд <span class="tagk der">розрахунок</span>.
+  Сам Клюге вважає оцінку загиблих менш надійною, ніж дані про бонуси, а частину виплат родини отримують із затримкою або не отримують зовсім.`;
+
+// ================= Регіони =================
+function dumbbell(id, rows, max) {
+  const x = v => v / max * 100;
+  document.getElementById(id).innerHTML = rows.map(r => `<div class="dbr">
+    <div class="nm">${r.r}<span>${r.when}</span></div>
+    <div class="ax"><div class="ln" style="left:${x(r.to)}%;width:${x(r.from) - x(r.to)}%"></div><div class="dot from" style="left:${x(r.from)}%" title="було ${dec(r.from, 2)} млн"></div><div class="dot to" style="left:${x(r.to)}%" title="стало ${dec(r.to, 2)} млн"></div></div>
+    <div class="v">${dec(r.from, r.from % 1 ? 1 : 0)} → <b>${r.to ? dec(r.to, r.to < .1 ? 2 : 1) : '0'}</b> <span style="color:var(--muted)">${r.to ? '−' + Math.round((1 - r.to / r.from) * 100) + '%' : 'скасовано'}</span></div></div>`).join('')
+    + `<div class="db-scale"><div></div><div><span>0</span><span>${dec(max / 2, 1)}</span><span>${dec(max, 1)} млн</span></div><div></div></div>`;
+}
+dumbbell('dbSign', R.cutsSign, 3.5);
+dumbbell('dbDeath', R.cutsDeath, 3.0);
+const RD = R.regionsDeficit;
+document.getElementById('deficitMeta').textContent = `Регіони рф закінчили ${PREV}-й з рекордним дефіцитом ${dec(RD[PREV], 1)} трлн ₽; у ${CUR}-му, за прогнозом Сбербанку, — до ${dec(RD[CUR], 0)} трлн.`;
+document.getElementById('explainCuts').innerHTML = `<span class="lbl">Людською мовою</span>
+  Це не загальна тенденція, а помітні випадки: частина регіонів урізає, інші піднімають, тому <b>середній бонус усе одно росте</b> (графік В). Але ріжуть саме там, де закінчуються гроші, і першими — виплати родинам загиблих:
+  щонайменше 10 регіонів урізали їх цього року, Оренбурзька область скасувала зовсім. Федеральні ${dec(deathSum, 1)} млн це не зачіпає. Водночас вербувальникам платять більше: у Самарі за людину з іншого регіону — до 800 тис. ₽.`;
+
+// ================= Чесно =================
+const notes = [
+  { t: 'Набір не обвалився', h: `≈${sp(rec[CUR] / (NM * 30.4))} людей на день — це багато`,
+    p: `Падіння на ${Math.abs(Math.round(recCh))}% — це тренд, а не крах. Це досі близько тисячі нових солдатів щодня, і в Кремля є резерв — мобілізація, яку він поки не оголошує, бо вона непопулярна. Тож ці цифри не про «скоро все», а про те, що війна стає для рф дедалі дорожчою.` },
+  { t: 'Різні рахунки', h: 'Офіційні цифри вищі на 10–15%',
+    p: `Медведєв назвав <b>${sp(R.official2025.contracts)}</b> контрактників за ${PREV}-й, а федеральний бонус того року отримали ${dec(F[PREV].y, 1)} тис. Частина різниці — люди без бонусу (ув'язнені), частина — пропаганда. Ми порівнюємо рік до року <b>за одним і тим самим джерелом</b>, тож тренд від цього не залежить.` },
+  { t: 'Втрати ≠ мінус у строю', h: 'Генштаб рахує вбитих і поранених разом',
+    p: 'Частина поранених повертається на фронт, тому «покриття втрат» — грубий показник. Але він порівнює два роки однаково, і напрям видно: розрив між тим, скільки рф втрачає, і тим, скільки набирає, зростає.' },
+];
+document.getElementById('notes').innerHTML = notes.map(n => `<div class="panel"><div class="h-tag">${n.t}</div><h3>${n.h}</h3><p>${n.p}</p></div>`).join('');
+
+// ================= Джерела =================
+document.getElementById('sources').innerHTML = R.sources.map(s => `<li><a href="${s.url}" target="_blank" rel="noopener">${s.title}</a></li>`).join('') +
+  `<li>Втрати рф — щоденні зведення Генштабу ЗСУ (архів russianwarship.rip); окупована площа — знімки карти DeepState на 1-ше число місяця. Ті самі дані, що на інших сторінках Перемогіуму.</li>
+   <li>Позначка <span class="tagk der">розрахунок</span> — наша арифметика з цифр джерел: набір × середній бонус, рекрути на км², «гробові» × оцінка загиблих. Точність — порядок величини, не до мільйона.</li>`;
+document.getElementById('footer').textContent = `Перемогіум · срекрутинг · відкриті джерела, оцінки станом на ${dateUA(R.asOf)} · втрати й територія на ${dateUA(D.generatedAt)}`;
+})();
+</script>
+<script src="assets/nav.js"></script>
+</body>
+</html>

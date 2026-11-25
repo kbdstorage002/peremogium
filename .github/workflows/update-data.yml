@@ -63,12 +63,12 @@ jobs:
       - name: Зібрати файли сайту
         run: |
           mkdir -p dist/data
-          cp data/data.js data/data.json data/npz.js dist/data/
+          cp data/data.js data/data.json data/npz.js data/recruit.js dist/data/
           cp -r assets dist/
           # Мітка версії, щоб браузери не показували вчорашні цифри з кешу
-          for page in index.html year.html calendar.html war.html npz.html; do
+          for page in index.html year.html calendar.html war.html npz.html recruit.html; do
             V=$(date -u +%Y%m%d%H%M)
-            sed -E "s#(data/data\.js|data/npz\.js|assets/nav\.css|assets/nav\.js|assets/years\.js)\"#\1?v=$V\"#g" "$page" > "dist/$page"
+            sed -E "s#(data/data\.js|data/npz\.js|data/recruit\.js|assets/nav\.css|assets/nav\.js|assets/years\.js)\"#\1?v=$V\"#g" "$page" > "dist/$page"
           done
           find dist -type f
 

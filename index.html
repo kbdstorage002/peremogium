@@ -26,6 +26,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="data/data.js"></script>
 <script src="data/npz.js"></script>
+<script src="data/recruit.js"></script>
 <script src="assets/years.js"></script>
 <style>
   :root {
@@ -113,6 +114,7 @@
 
   /* ---------- Чотири картки-розділи ---------- */
   .cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  .cards > .card:last-child:nth-child(odd) { grid-column: 1 / -1; }
   a.card { display: flex; flex-direction: column; gap: 10px; transition: border-color .2s, transform .2s; }
   a.card:hover { border-color: #34405a; transform: translateY(-2px); }
   .card-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
@@ -193,6 +195,7 @@
       <a href="war.html">2026 проти всієї війни</a>
       <a href="calendar.html">Календар втрат</a>
       <a href="npz.html">НПЗдець</a>
+      <a href="recruit.html">срекрутинг</a>
     </nav>
   </div>
 </header>
@@ -372,6 +375,24 @@ const vizNpz = `<svg viewBox="0 0 ${W} ${H}" aria-hidden="true">${bars(byM, {
   colors: () => 'var(--fire)', labels: months12.map((m, i) => i % 3 === 0 || i === 11 ? MS[+m.slice(5) - 1] : ''),
   top: byM.map(n => n === mxM ? n : null), dashedLast: true })}</svg>`;
 
+// ґ) Набір у армію рф: січень–жовтень торік і цього року (оцінка Клюге, data/recruit.js)
+const LOSS_RED = '#ff1f3d';
+const RC = window.RECRUIT_DATA, HAS_RC = RC?.cur === CUR && RC.kluge?.['y' + CUR];
+let vizRec = '', recLine = '';
+if (HAS_RC) {
+  const K = RC.kluge, rv = [K['y' + (CUR - 1)], K['y' + CUR]];
+  const lossK = y => sum((D.personnel.monthly[y] || []).slice(0, K.months));
+  // ☠️ по центру стовпчиків «втрати» (та сама геометрія, що в bars())
+  const skulls = (vals, pad) => { const mx = Math.max(...vals, 1), bw = (W - 2 * pad) / vals.length;
+    return vals.map((v, i) => { if (!(i % 2)) return ''; const h = v / mx * (H - 36), cx = pad + i * bw + bw * .5, cy = H - 18 - h / 2;
+      return `<text class="fadein" style="--i:${i}" x="${cx.toFixed(1)}" y="${cy.toFixed(1)}" text-anchor="middle" dominant-baseline="central" font-size="26">☠️</text>`; }).join(''); };
+  const v4 = [rv[0], lossK(CUR - 1), rv[1], lossK(CUR)];
+  vizRec = `<svg viewBox="0 0 ${W} ${H}" aria-hidden="true">${bars(v4, {
+    colors: i => i % 2 ? LOSS_RED : COL(CUR - 1 + (i >> 1)), labels: [`набір ${CUR - 1}`, 'втрати', `набір ${CUR}`, 'втрати'],
+    top: v4.map(v => sp(v / 1000) + 'k'), pad: 6, hl: -1 })}${skulls(v4, 6)}</svg>`;
+  recLine = `Набір покриває втрати на <b>${Math.round(rv[1] / lossK(CUR) * 100)}%</b> (торік — ${Math.round(rv[0] / lossK(CUR - 1) * 100)}%), а середній бонус уже ${String(RC.bonus.avg.at(-1).v).replace('.', ',')} млн ₽.`;
+}
+
 document.getElementById('cards').innerHTML = [
   card({ href: 'war.html', tag: 'Ціна 1 км² для рф', num: { n: price26 }, unit: 'свинособак/км²',
     badge: priceUp ? `${dec(price26 / price25)}× дорожче` : `${dec(price25 / price26)}× дешевше`, good: priceUp, viz: vizPrice,
@@ -385,6 +406,9 @@ document.getElementById('cards').innerHTML = [
   card({ href: 'npz.html', tag: 'Удари по НПЗ рф', num: { n: s26.length }, unit: `влучань у ${CUR}`,
     badge: s25.length && s26.length > s25.length ? `${dec(s26.length / s25.length)}× більше` : '', viz: vizNpz,
     line: `${plants26} ${plural(plants26, ['завод', 'заводи', 'заводів'])} уражено цього року.` }),
+  HAS_RC && card({ href: 'recruit.html', tag: 'срекрутинг', num: { n: RC.kluge['y' + CUR] }, unit: `контрактів за ${RC.kluge.period} ${CUR}`,
+    badge: `${Math.round((RC.kluge['y' + CUR] / RC.kluge['y' + (CUR - 1)] - 1) * 100)}% до торік`.replace('-', '−'), good: RC.kluge['y' + CUR] < RC.kluge['y' + (CUR - 1)], viz: vizRec,
+    key: `<div class="key"><span>${RC.kluge.period}: набір — оцінка за бюджетами регіонів рф (відкриті джерела), втрати — Генштаб ЗСУ</span></div>`, line: recLine }),
 ].filter(Boolean).join('');
 
 // ================= 3. ЦИФРА ДНЯ =================

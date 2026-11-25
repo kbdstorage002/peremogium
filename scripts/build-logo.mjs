@@ -57,7 +57,7 @@ await fs.writeFile(path.join(OUT, 'favicon.svg'), svg('0 0 100 100',
 
 // 3. Вбудовуємо словесний знак у сторінку, щоб він брав колір із CSS
 const inline = `<svg viewBox="${vbWord}" aria-hidden="true" focusable="false"><path fill="currentColor" d="${word.d}"/></svg>`;
-for (const page of ['index.html', 'year.html', 'calendar.html', 'war.html', 'npz.html']) {
+for (const page of ['index.html', 'year.html', 'calendar.html', 'war.html', 'npz.html', 'recruit.html']) {
   const file = path.join(ROOT, page);
   const html = await fs.readFile(file, 'utf8');
   if (!html.includes('<!--logo:start-->')) throw new Error(`У ${page} немає міток <!--logo:start--><!--logo:end-->`);
