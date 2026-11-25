@@ -12,9 +12,11 @@ on:
       - 'calendar.html'
       - 'war.html'
       - 'npz.html'
+      - 'recruit.html'
       - 'data/data.js'
       - 'data/data.json'
       - 'data/npz.js'
+      - 'data/recruit.js'
       - 'assets/**'
       - '.github/workflows/update-data.yml'
 
