@@ -22,6 +22,7 @@ const CACHE = path.join(DATA, 'cache', 'deepstate');
 const THIS_YEAR = new Date(Date.now() + 2 * 3600e3).getUTCFullYear();
 const YEARS = Array.from({ length: THIS_YEAR - 2022 + 1 }, (_, i) => 2022 + i);
 const DAILY_FROM = '2022-02-25';               // щоденний ряд (календар втрат): з першого зведення Генштабу
+const EQUIPMENT = ['uav_systems', 'vehicles_fuel_tanks', 'artillery_systems', 'armoured_fighting_vehicles', 'tanks', 'mlrs', 'aa_warfare_systems', 'special_military_equip'];
 const UA = 'Mozilla/5.0 (compatible; peremogium-updater/1.0)';
 
 const log = (...a) => console.log('·', ...a);
@@ -225,7 +226,35 @@ async function fetchDeepState(today) {
       partialGained[y] = { ...partial[y], value: d.gained }; partialLiberated[y] = { ...partial[y], value: d.lost };
     }
   }
-  return { monthly, partial, partialPrevYear, gained, liberated, partialGained, partialLiberated,
+  // Ковзні тижні для головної: від останнього знімка назад по 7 діб (знімки бувають не щодня —
+  // беремо останній знімок не пізніше потрібного моменту). Найсвіжіший тиждень — ще й захоплене/звільнене окремо.
+  const WEEKS_BACK = 8, weekSnaps = [];
+  for (let k = 0; k <= WEEKS_BACK; k++) {
+    const t = new Date(Date.parse(latest.createdAt) - k * 7 * 864e5 + 60e3).toISOString();
+    const s = before(t);
+    if (s) weekSnaps.push(s);
+  }
+  const weekly = [];
+  for (let k = 0; k + 1 < weekSnaps.length; k++) {
+    const b = weekSnaps[k], a = weekSnaps[k + 1];
+    if (a.id === b.id) continue;
+    weekly.unshift({ from: a.createdAt.slice(0, 10), to: b.createdAt.slice(0, 10),
+      net: +((await snapshotArea(b.id)) - (await snapshotArea(a.id))).toFixed(1) });
+  }
+  let lastWeek = null;
+  if (weekSnaps.length > 1) {
+    const d = await snapshotDiff(weekSnaps[1].id, weekSnaps[0].id);
+    lastWeek = { from: weekSnaps[1].createdAt.slice(0, 10), to: weekSnaps[0].createdAt.slice(0, 10), gained: d.gained, liberated: d.lost };
+    log(`DeepState: останній тиждень ${lastWeek.from}…${lastWeek.to}: +${d.gained} / −${d.lost} км²`);
+  }
+  // Останні 4 тижні — для «ціни 1 км²» на головній (втрати за ці дні ÷ захоплене)
+  let last4w = null;
+  if (weekSnaps.length > 4) {
+    const d = await snapshotDiff(weekSnaps[4].id, weekSnaps[0].id);
+    last4w = { from: weekSnaps[4].createdAt.slice(0, 10), to: weekSnaps[0].createdAt.slice(0, 10), gained: d.gained, liberated: d.lost };
+    log(`DeepState: останні 4 тижні ${last4w.from}…${last4w.to}: +${d.gained} / −${d.lost} км²`);
+  }
+  return { monthly, partial, partialPrevYear, gained, liberated, partialGained, partialLiberated, weekly, lastWeek, last4w,
     latest: { area: latestArea, at: latest.createdAt }, boundaries: areas };
 }
 
@@ -267,7 +296,21 @@ async function main() {
       occupiedNow: territory.latest.area,
       asOf: territory.latest.at.slice(0, 10),
       boundaries: territory.boundaries,
+      weekly: territory.weekly,            // ковзні тижні до останнього знімка, км² (захоплене мінус звільнене)
+      lastWeek: territory.lastWeek,        // найсвіжіший тиждень: захоплено / звільнено окремо
+      last4w: territory.last4w,            // останні 4 тижні: захоплено / звільнено окремо
     },
+    // Техніка рф за добу (останні 60 днів), та сама логіка днів, що й у personnel.daily
+    equipment: (() => {
+      const out = {};
+      for (const k of EQUIPMENT) {
+        const d = genStaffDaily(gsRecs, k, ymd(new Date(Date.parse(personnel.lastDate) - 61 * 864e5)));
+        out[k] = d.values.slice(-60);
+        out.start ??= ymd(new Date(Date.parse(d.start) + (d.values.length - out[k].length) * 864e5));
+      }
+      out.totals = Object.fromEntries(EQUIPMENT.map(k => [k, gsRecs[personnel.lastDate][k]]));   // накопичено з початку війни
+      return out;
+    })(),
     oilGas: manual.oilGas,
     oilGasYears: manual.oilGasYears,
   };

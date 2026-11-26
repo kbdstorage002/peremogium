@@ -84,33 +84,31 @@
   .line { font-size: 14px; color: var(--text-2); line-height: 1.5; margin: 0; }
   .line b { color: var(--text); font-weight: 600; }
 
-  /* ---------- Головний графік ---------- */
-  .hero { margin: 26px 0 14px; padding: 24px 26px 18px; }
-  .hero-top { display: flex; justify-content: space-between; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
   .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
-  .hero h2 { font-size: clamp(22px, 2.8vw, 30px); line-height: 1.2; margin: 6px 0 0; font-weight: 700; letter-spacing: -.015em; max-width: 720px; }
-  .hero h2 em { font-style: normal; color: color-mix(in srgb, var(--cur) 80%, #fff); }
-  .hero .num { text-align: right; font-size: 44px; color: color-mix(in srgb, var(--cur) 80%, #fff); }
-  .hero .num small { display: block; margin: 4px 0 0; text-align: right; }
-  /* Стовпчики темпу: нуль може бути не внизу (рік, коли звільнили більше, ніж втратили) */
-  .pchart { position: relative; height: 210px; margin: 34px 0 30px; display: flex; gap: clamp(12px, 3vw, 40px); padding: 0 clamp(0px, 4vw, 60px); }
-  .pzero { position: absolute; left: 0; right: 0; border-top: 1px solid var(--border-2); }
-  .pcol { position: relative; flex: 1; }
-  .pbar { position: absolute; left: 14%; right: 14%; border-radius: 6px 6px 2px 2px; opacity: .55;
-    transform: scaleY(0); transform-origin: 50% 100%; transition: transform .8s cubic-bezier(.3,1.2,.5,1); transition-delay: calc(var(--i) * 110ms); }
-  .pbar.neg { border-radius: 2px 2px 6px 6px; transform-origin: 50% 0; }
-  .pcol.cur .pbar { opacity: 1; box-shadow: 0 0 24px color-mix(in srgb, var(--cur) 40%, transparent); }
-  .in .pbar { transform: scaleY(1); }
-  .pval { position: absolute; left: 0; right: 0; text-align: center; font: 600 15px var(--mono); color: var(--text-2); }
-  .pval small { display: block; font: 400 11px Inter, sans-serif; color: var(--good); }
-  .pcol.cur .pval { color: #fff; font-size: 18px; }
-  .pyr { position: absolute; left: 0; right: 0; bottom: -24px; text-align: center; font: 11px var(--mono); color: var(--muted); white-space: nowrap; }
-  .pcol.cur .pyr { color: var(--text-2); }
-  .held { display: flex; align-items: center; gap: 16px; padding-top: 16px; border-top: 1px dashed var(--border-2); }
-  .held-bar { flex: 0 0 180px; height: 8px; border-radius: 4px; background: #39404d; overflow: hidden; }
-  .held-bar i { display: block; height: 100%; background: linear-gradient(90deg, #3b82d6, #e3b341); }
-  .held p { margin: 0; font-size: 13px; color: var(--text-2); }
-  .held b { color: var(--text); }
+
+  /* ---------- Три щоденні картки ---------- */
+  .today-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin: 26px 2px 10px; }
+  .today-head h2 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -.01em; }
+  .today-head span { font: 12px var(--mono); color: var(--muted); }
+  .today { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 14px; }
+  .today .card { display: flex; flex-direction: column; gap: 10px; }
+  .today .viz { height: 120px; }
+  .today .num { font-size: 40px; }
+  .delta { font: 600 12px var(--mono); padding: 4px 9px; border-radius: 7px; white-space: nowrap; }
+  .delta.up { color: var(--good); background: var(--good-bg); box-shadow: inset 0 0 0 1px rgba(47,191,113,.3); }
+  .delta.down { color: var(--warn); background: rgba(230,162,60,.12); box-shadow: inset 0 0 0 1px rgba(230,162,60,.35); }
+  .delta.flat { color: var(--text-2); background: var(--panel); box-shadow: inset 0 0 0 1px var(--border-2); }
+  .eq { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 7px 10px; height: 100%; align-content: space-between; }
+  .eq .n { font: 500 13px Inter, sans-serif; color: var(--text-2); }
+  .eq .v { font: 600 15px var(--mono); text-align: right; font-variant-numeric: tabular-nums; }
+  .eq .d { font: 500 12px var(--mono); text-align: right; min-width: 48px; font-variant-numeric: tabular-nums; }
+  .eq .d.up { color: var(--good); } .eq .d.down { color: var(--warn); } .eq .d.flat { color: var(--muted); }
+  .track { position: relative; height: 8px; border-radius: 4px; background: rgba(255,255,255,.05); }
+  .track i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; background: var(--c); }
+  .track i.y { background: none; box-shadow: inset 0 0 0 1px var(--c); opacity: .6; }
+  .track b { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--text-2); border-radius: 1px; opacity: .7; }
+  .eq-key { font: 11px var(--mono); color: var(--muted); display: flex; gap: 14px; flex-wrap: wrap; }
+  .eq-key i { display: inline-block; width: 12px; height: 6px; border-radius: 3px; margin-right: 6px; vertical-align: 1px; }
 
   /* ---------- Чотири картки-розділи ---------- */
   .cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
@@ -162,17 +160,15 @@
     .in .pulse { animation: none; }
   }
 
+  @media (max-width: 1020px) {
+    .today { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .today > .card:last-child { grid-column: 1 / -1; }
+  }
   @media (max-width: 860px) {
-    .cards, .strip { grid-template-columns: minmax(0, 1fr); }
+    .cards, .strip, .today { grid-template-columns: minmax(0, 1fr); }
   }
   @media (max-width: 560px) {
     .wrap { padding: 0 16px; }
-    .hero { padding: 18px 16px 14px; }
-    .hero .num, .hero .num small { text-align: left; }
-    .pchart { height: 170px; }
-    .pval { font-size: 13px; } .pcol.cur .pval { font-size: 15px; }
-    .held { flex-direction: column; align-items: stretch; gap: 10px; }
-    .held-bar { flex: none; }
     .fact { flex-wrap: wrap; }
     .num { font-size: 28px; }
   }
@@ -200,7 +196,8 @@
   </div>
 </header>
 
-<a class="panel hero" id="hero" href="year.html" style="display:block"></a>
+<div class="today-head"><h2>Перемогіум за добу</h2><span id="todayAsOf"></span></div>
+<div class="today" id="today"></div>
 <div class="cards" id="cards"></div>
 <div class="strip">
   <div class="panel fact" id="fact"></div>
@@ -272,7 +269,6 @@ const warYears = (D.years || []).filter(y => y <= CUR).map(yr => {
 }).filter(r => r.price);
 const price25 = warYears.find(r => r.yr === PREV)?.price, price26 = warYears.find(r => r.yr === CUR)?.price;
 const priceUp = price26 >= price25;
-const rank = [...warYears].sort((a, b) => b.price - a.price).findIndex(r => r.yr === CUR) + 1;
 
 // ================= НПЗ =================
 const npzAsOf = NPZ?.asOf || last.d;
@@ -294,41 +290,130 @@ const bars = (vals, { colors, labels, top = [], pad = 4, hl = -1, dashedLast = f
   }).join('');
 };
 
-// ================= 1. ГОЛОВНИЙ ГРАФІК: темп наступу рф по роках =================
-// км² на добу (захоплене мінус звільнене, як на сторінці року). 2022-й не беремо: фронт тоді рухався в обидва боки,
-// і даних DeepState до травня немає.
+// ================= 1. ПЕРЕМОГІУМ ЗА ДОБУ: три картки, які щодня інші =================
+// Принцип: усі цифри правдиві, але з кількох чесних порівнянь показуємо те, що сьогодні на нашу користь
+// (база порівняння завжди підписана на плашці). Якщо жодне не на нашу користь — показуємо як є, жовтим.
 const UA = 603628;                                                  // площа України, км²
-const paceYears = (D.years || []).filter(y => y >= 2023 && y <= CUR).map(yr => {
-  if (yr === CUR) return { yr, v: r26 };
-  const m = D.territory.monthly[yr], n = m.filter(v => v != null).length;
-  return { yr, v: sum(m) / sum(DAYS(yr).slice(0, n)) };
-});
-const lowerBefore = paceYears.filter(p => p.yr < CUR && p.v <= r26).at(-1);   // останній рік, коли було ще повільніше
-const pMax = Math.max(...paceYears.map(p => p.v), 0), pMin = Math.min(...paceYears.map(p => p.v), 0);
-const zeroTop = pMax / (pMax - pMin || 1) * 100;                  // де нуль, % від висоти графіка
-const heroBars = paceYears.map((p, i) => {
-  const cur = p.yr === CUR, neg = p.v < 0, h = Math.abs(p.v) / (pMax - pMin || 1) * 100;
-  const col = neg ? 'var(--good)' : COL(p.yr);
-  return `<div class="pcol${cur ? ' cur' : ''}">
-    <div class="pbar${neg ? ' neg' : ''}" style="--i:${i};top:${neg ? zeroTop : zeroTop - h}%;height:${Math.max(h, .6)}%;background:${col}"></div>
-    <div class="pval fadein" style="--i:${i};bottom:calc(${100 - zeroTop + (neg ? 0 : h)}% + 6px)">${neg ? '−' : ''}${dec(Math.abs(p.v))}${neg ? '<small>звільнено більше</small>' : ''}</div>
-    <div class="pyr">${p.yr}${cur ? ' · зараз' : ''}</div>
-  </div>`;
-}).join('');
-const occPct = D.territory.occupiedNow / UA * 100;
-const B = D.territory.boundaries || {}, yAgoKey = `${CUR - 1}-${String(new Date(D.territory.asOf).getUTCMonth() + 1).padStart(2, '0')}`;
-const yAgo = B[yAgoKey]?.area;
-document.getElementById('hero').innerHTML = `
-  <div class="hero-top">
-    <div><div class="tag">Темп наступу рф по роках · DeepState</div>
-      <h2>${slower ? `У ${CUR}-му росія просувається <em>${lowerBefore ? `найповільніше з ${lowerBefore.yr}-го` : 'найповільніше за всі роки'}</em>.` : `Темп наступу рф по роках.`}</h2></div>
-    <div class="num"><span class="count" data-to="${r26}" data-d="1">${dec(r26)}</span><small>км² на добу · у ${PREV}-му — ${dec(r25)}</small></div>
-  </div>
-  <div class="pchart"><div class="pzero" style="top:${zeroTop}%"></div>${heroBars}</div>
-  <div class="held">
-    <div class="held-bar"><i style="width:${(100 - occPct).toFixed(2)}%"></i></div>
-    <p><b>${dec(100 - occPct)}%</b> території України — під контролем України. Окуповано ${dec(occPct)}% (${sp(D.territory.occupiedNow)} км²)${yAgo ? `; за рік ця частка зросла на ${dec((D.territory.occupiedNow - yAgo) / UA * 100, 2)} п.п.` : '.'}</p>
-  </div>`;
+const signed = n => (n > 0 ? '+' : n < 0 ? '−' : '±') + sp(Math.abs(n));
+const signedDec = n => (n > 0 ? '+' : n < 0 ? '−' : '±') + dec(Math.abs(n));
+const avg = a => sum(a) / (a.length || 1);
+const ddmm = isoD => isoD.slice(8, 10) + '.' + isoD.slice(5, 7);
+const days = n => `${n} ${plural(n, ['день', 'дні', 'днів'])}`;
+// Скільки днів поспіль до останнього значення не було більшого (меншого)
+const streak = (arr, cmp) => { let n = 0; for (let i = arr.length - 2; i >= 0 && cmp(arr.at(-1), arr[i]); i--) n++; return n; };
+const more = r => r >= 1.95 ? `у ${dec(r)} раза більше` : `на ${Math.round((r - 1) * 100)}% більше`;
+const less = (cur, base) => cur <= 0 ? 'рф відкотили назад' : base / cur >= 1.95 ? `у ${dec(base / cur)} раза повільніше` : `на ${Math.round((1 - cur / base) * 100)}% повільніше`;
+const pick = cands => { const c = cands.filter(Boolean); return c.find(x => x.good) || c[0]; };
+const plaque = c => `<span class="delta ${c.good ? 'up' : 'down'}">${c.text}</span>`;
+const avgPerDay = y => { const m = D.personnel.monthly[y] || []; return sum(m) / (sum(DAYS(y).slice(0, m.length)) || 1); };
+
+// Круглі позначки: «перейшли 1 650 000» або «до 26 000 — ще 8, менше ніж за добу»
+const milestone = (total, today, perDay, step) => {
+  const crossed = Math.floor(total / step) * step;
+  if (total - today < crossed) return { crossed };
+  const next = crossed + step, left = next - total;
+  return { next, left, days: perDay > 0 ? left / perDay : Infinity };
+};
+const soon = d => d < 1 ? 'менше ніж за добу' : `приблизно за ${Math.round(d)} ${plural(Math.round(d), ['добу', 'доби', 'діб'])}`;
+
+// Стовпчики зі знаком (нуль може бути не внизу) і пунктирною лінією середнього
+const signedBars = (vals, { color, hl = vals.length - 1, avgLine, ghost, labels = [], top = [] }) => {
+  const g = (ghost || []).filter(v => v != null), pad = 4, mx = Math.max(...vals, ...g, 0), mn = Math.min(...vals, ...g, 0), span = (mx - mn) || 1, h0 = H - 34;
+  const y = v => 14 + (mx - v) / span * h0, bw = (W - 2 * pad) / vals.length;
+  let out = `<line x1="0" x2="${W}" y1="${y(0).toFixed(1)}" y2="${y(0).toFixed(1)}" stroke="var(--border-2)"/>`;
+  vals.forEach((v, i) => {
+    const bx = pad + i * bw + bw * .14, top_ = Math.min(y(v), y(0)), hh = Math.max(Math.abs(y(v) - y(0)), 1), cx = (bx + bw * .36).toFixed(1);
+    const c = v < 0 ? 'var(--good)' : color, cur = i === hl;
+    out += `<rect class="bar" style="--i:${i}" x="${bx.toFixed(1)}" y="${top_.toFixed(1)}" width="${(bw * .72).toFixed(1)}" height="${hh.toFixed(1)}" rx="2" fill="${c}" fill-opacity="${cur ? 1 : .38}"/>`;
+    if (top[i] != null) out += `<text class="vlbl fadein" style="--i:${i}" x="${cx}" y="${(v < 0 ? y(0) - 5 : y(v) - 5).toFixed(1)}" text-anchor="middle"${cur ? ' fill="#fff"' : ''}>${top[i]}</text>`;
+    if (labels[i]) out += `<text class="axis" x="${cx}" y="${H - 4}" text-anchor="middle"${cur ? ' fill="var(--text-2)"' : ''}>${labels[i]}</text>`;
+  });
+  // ghost — ті самі дні торік: тонка ламана поверх стовпчиків
+  if (ghost) out += `<polyline class="fadein" points="${ghost.map((v, i) => v == null ? '' : `${(pad + (i + .5) * bw).toFixed(1)},${y(v).toFixed(1)}`).filter(Boolean).join(' ')}" fill="none" stroke="${C_PREV}" stroke-width="1.6" stroke-linejoin="round"/>`;
+  if (avgLine != null) out += `<line x1="0" x2="${W}" y1="${y(avgLine).toFixed(1)}" y2="${y(avgLine).toFixed(1)}" stroke="var(--text-2)" stroke-dasharray="3 3" stroke-opacity=".6"/>`;
+  return `<svg viewBox="0 0 ${W} ${H}" aria-hidden="true">${out}</svg>`;
+};
+const todayCard = ({ href, tag, num, unit, delta, viz, line, key = '' }) => `
+  <${href ? `a href="${href}"` : 'div'} class="panel card">
+    <div class="card-top"><span class="tag">${tag}</span>${href ? '<span class="go">Детальніше →</span>' : ''}</div>
+    <div class="card-num"><div class="num">${num}<small>${unit}</small></div>${delta}</div>
+    <div class="viz">${viz}</div>${key}
+    <p class="line">${line}</p>
+  </${href ? 'a' : 'div'}>`;
+
+// а) Втрати рф за останню добу — проти того самого дня торік (і 30 днів проти тих самих днів торік)
+const lossVals = daily.map(x => x.v), last30 = daily.slice(-30), d30 = last30.map(x => x.v), lossAvg = avg(d30);
+const lyOf = d => `${+d.slice(0, 4) - 1}${d.slice(4)}`;
+const lyD = lyOf(last.d), lyV = dayVal.get(lyD), ly30 = last30.map(x => dayVal.get(lyOf(x.d)) ?? null);
+const cmpTxt = (cur, base) => cur >= base ? more(cur / base) : base / cur >= 1.95 ? `у ${dec(base / cur)} раза менше` : `на ${Math.round((1 - cur / base) * 100)}% менше`;
+const lossPlaque = lyV ? { good: last.v >= lyV, text: `${cmpTxt(last.v, lyV)}, ніж ${dm(lyD)} ${PREV}` }
+  : { good: last.v >= avgPerDay(PREV), text: `${cmpTxt(last.v, avgPerDay(PREV))} за середню добу ${PREV}-го` };
+const s30 = sum(d30), sLy30 = sum(ly30.filter(v => v != null));
+const hiN = streak(lossVals, (a, b) => a > b);
+const pm = milestone(D.personnel.totalSinceInvasion, last.v, lossAvg, 10000);
+const lossLine = (hiN >= 3 ? `<b>Найбільше за ${days(hiN)}.</b> ` : '')
+  + (sLy30 ? `За 30 днів — <b>${cmpTxt(s30, sLy30)}</b>, ніж за ті самі дні ${PREV}-го. ` : '')
+  + (pm.crossed ? `Загалом <b>перейшли позначку ${sp(pm.crossed)}</b> 🎉` : `До ${sp(pm.next)} загалом — ще ${sp(pm.left)}.`);
+const cardLoss = todayCard({ href: 'calendar.html', tag: `Втрати рф · ${dm(last.d)}`,
+  num: sp(last.v), unit: 'свинособак', delta: plaque(lossPlaque),
+  key: `<div class="eq-key"><span><i style="background:${C_CUR}"></i>${CUR}</span><span><i style="height:2px;background:${C_PREV}"></i>ті самі дні ${PREV}-го</span></div>`,
+  viz: signedBars(d30, { color: C_CUR, ghost: ly30, labels: last30.map((x, i, a) => i === 0 || i === a.length - 1 ? ddmm(x.d) : '') }),
+  line: lossLine });
+
+// б) Техніка рф за останню добу. Велика цифра — категорія, яка найбільше перевищила своє середнє.
+const EQ = D.equipment;
+const EQ_ROWS = [['uav_systems', 'БпЛА', 'БпЛА'], ['vehicles_fuel_tanks', 'Автотехніка', 'одиниць автотехніки'], ['artillery_systems', 'Артсистеми', 'артсистем'],
+  ['armoured_fighting_vehicles', 'ББМ', 'ББМ'], ['tanks', 'Танки', 'танків']];
+const EQ_EXTRA = [['mlrs', 'РСЗВ', 'РСЗВ'], ['aa_warfare_systems', 'ППО', 'засобів ППО']];
+let cardEq = '';
+if (EQ?.uav_systems?.length > 2) {
+  const eqDay = iso(Date.parse(EQ.start + 'T00:00:00Z') + (EQ.uav_systems.length - 1) * 864e5);
+  const st = ([k, name, gen]) => { const a = EQ[k], av = avg(a.slice(-30)); return { k, name, gen, a, v: a.at(-1), y: a.at(-2), av, m: Math.max(...a.slice(-30), 1), r: av >= 3 ? a.at(-1) / av : 0 }; };
+  const S = EQ_ROWS.map(st);
+  const top = S.reduce((b, s) => s.r > b.r ? s : b, { r: 1 });
+  const head = top.k ? top : S[0];
+  const eqPlaque = pick([
+    top.k && { good: true, text: `${more(top.r)} за середнє за 30 днів` },
+    { good: head.v > head.y, text: `${signed(head.v - head.y)} до попередньої доби` },
+  ]);
+  const rows = S.map(s => `<span class="n">${s.name}</span>
+      <span class="track" style="--c:${C_CUR}" title="${dm(eqDay)}: ${sp(s.v)} · попередня доба: ${sp(s.y)} · середнє за 30 днів: ${sp(s.av)}">
+        <i class="y" style="width:${(s.y / s.m * 100).toFixed(1)}%"></i><i style="width:${(s.v / s.m * 100).toFixed(1)}%;opacity:.85"></i><b style="left:${(s.av / s.m * 100).toFixed(1)}%"></b></span>
+      <span class="v">${sp(s.v)}</span><span class="d ${s.v > s.y ? 'up' : s.v < s.y ? 'down' : 'flat'}">${signed(s.v - s.y)}</span>`).join('');
+  // Найсвіжіша кругла позначка: щойно перейдена — святкуємо; інакше — найближча
+  const ms = [...S, ...EQ_EXTRA.filter(([k]) => EQ[k]).map(st)].filter(s => EQ.totals?.[s.k])
+    .map(s => ({ ...s, ...milestone(EQ.totals[s.k], s.v, s.av, 10 ** Math.max(1, Math.floor(Math.log10(EQ.totals[s.k])) - 1)) }));
+  const msHit = ms.find(x => x.crossed), msNext = [...ms].sort((a, b) => a.days - b.days)[0];
+  cardEq = todayCard({ tag: `Техніка рф · ${dm(eqDay)}`,
+    num: sp(head.v), unit: head.name, delta: plaque(eqPlaque),
+    viz: `<div class="eq">${rows}</div>`,
+    key: `<div class="eq-key"><span><i style="background:${C_CUR}"></i>ця доба</span><span><i style="box-shadow:inset 0 0 0 1px ${C_CUR}"></i>попередня</span><span><i style="width:2px;background:var(--text-2)"></i>середнє за 30 днів</span></div>`,
+    line: msHit ? `🎉 Знищено вже <b>понад ${sp(msHit.crossed)} ${msHit.gen}</b> — цю позначку перейшли за останню добу.`
+      : msNext && isFinite(msNext.days) ? `До <b>${sp(msNext.next)}</b> знищених ${msNext.gen} — ще ${sp(msNext.left)}, ${soon(msNext.days)}.`
+      : `Цифри Генштабу ЗСУ; праворуч — різниця з попередньою добою.` });
+}
+
+// в) Ціна 1 км² за останні 4 тижні: втрати рф за ці дні ÷ захоплене за ними (DeepState). Щодня вікно зсувається.
+// Рахуємо так само, як ціну по роках нижче (звільнене не віднімаємо), тож їх можна порівнювати.
+const L4 = D.territory.last4w;
+let cardPrice = '';
+if (L4?.gained > 0) {
+  const lossW = sum(daily.filter(x => x.d > L4.from && x.d <= L4.to).map(x => x.v)), price4 = lossW / L4.gained;
+  const yrs = warYears.filter(r => r.yr < CUR).sort((a, b) => b.yr - a.yr);    // спершу торік, далі старші
+  const pricePlaque = pick([
+    ...yrs.map(r => ({ good: price4 > r.price, text: `${price4 >= r.price ? more(price4 / r.price).replace('більше', 'дорожче') : cmpTxt(price4, r.price).replace('менше', 'дешевше')}, ніж у ${r.yr}-му` })),
+  ]);
+  const KYIV = 839, PITCH = 0.00714;                                           // площа Києва, км²; футбольне поле 105×68 м, км²
+  const rows = [...warYears.map(r => ({ v: r.price, l: r.yr === CUR ? `${CUR}*` : String(r.yr), c: COL(r.yr) })), { v: price4, l: '4 тижні', c: C_CUR }];
+  cardPrice = todayCard({ href: 'war.html', tag: `Ціна 1 км² · ${ddmm(L4.from)}–${ddmm(L4.to)}`,
+    num: sp(price4), unit: 'свинособак за км²', delta: plaque(pricePlaque),
+    viz: `<svg viewBox="0 0 ${W} ${H}" aria-hidden="true">${bars(rows.map(r => r.v), { colors: i => rows[i].c, labels: rows.map(r => r.l), top: rows.map(r => sp(r.v)), pad: 6, hl: rows.length - 1 })}</svg>`,
+    key: `<div class="eq-key"><span>втрати (убиті й поранені) ÷ захоплене, по роках так само · * ${CUR} з 1 січня</span></div>`,
+    line: `За 4 тижні рф поклала <b>${sp(lossW)}</b> свинособак заради ${dec(L4.gained)} км² — це ${dec(L4.gained / KYIV * 100)}% площі Києва. `
+      + `Тобто ~<b>${dec(price4 * PITCH)}</b> на кожне футбольне поле.` });
+}
+document.getElementById('today').innerHTML = cardLoss + cardEq + cardPrice;
+document.getElementById('todayAsOf').textContent = `Генштаб ЗСУ на ${dm(D.personnel.asOf)} · DeepState на ${dm(D.territory.asOf)}`;
 
 // ================= 2. ЧОТИРИ КАРТКИ-РОЗДІЛИ =================
 const card = ({ href, tag, num, unit, badge, good = true, tone, viz, key = '', line }) => `
@@ -340,12 +425,7 @@ const card = ({ href, tag, num, unit, badge, good = true, tone, viz, key = '', l
     <p class="line">${line}</p>
   </a>`;
 
-// а) Ціна км² по роках
-const vizPrice = `<svg viewBox="0 0 ${W} ${H}" aria-hidden="true">${bars(warYears.map(r => r.price), {
-  colors: i => COL(warYears[i].yr), labels: warYears.map(r => r.yr), top: warYears.map(r => sp(r.price)), pad: 10,
-  hl: warYears.findIndex(r => r.yr === CUR) })}</svg>`;
-
-// б) Нафтогазові доходи рф: у середньому за місяць, по роках
+// а) Нафтогазові доходи рф: у середньому за місяць, по роках
 const OY = D.oilGasYears?.years || {}, OG = D.oilGas;
 const oilRows = Object.keys(OY).map(Number).filter(y => y < CUR).map(y => ({ yr: y, v: OY[y] / 12 }));
 if (OG?.year === CUR) oilRows.push({ yr: CUR, v: OG.value / OG.months, part: true });
@@ -355,7 +435,7 @@ const vizOil = HAS_OIL ? `<svg viewBox="0 0 ${W} ${H}" aria-hidden="true">${bars
   hl: oilRows.length - 1 })}</svg>` : '';
 const keyOil = `<div class="key"><span>трлн ₽ на місяць, у середньому за рік${HAS_OIL ? ` · ${CUR}: ${OG.period}` : ''}</span></div>`;
 
-// в) Календар: остання доба проти попередньої
+// б) Календар: остання доба проти попередньої
 const prevDay = daily.at(-2)?.v, dayUp = last.v >= prevDay;
 const dayPct = prevDay ? Math.round(Math.abs(pct(prevDay, last.v))) : 0;
 const dayBadge = prevDay ? `на ${dayPct}% ${dayUp ? 'більше' : 'менше'}, ніж учора` : '';
@@ -368,14 +448,14 @@ const maxCell = cells.find(c => c.v === vmax);
 const vizCal = `<div class="heat">${cells.map((c, i) => c.v == null ? `<i class="empty" style="--i:${i}"></i>`
   : `<i${c === maxCell ? ' class="max"' : ''} style="--i:${i};--c:${C_CUR};--o:${(.15 + .85 * (c.v - vmin) / (vmax - vmin || 1)).toFixed(2)}" title="${dm(c.d)}: ${sp(c.v)}"></i>`).join('')}</div>`;
 
-// г) НПЗ: влучання по місяцях за 12 місяців
+// в) НПЗ: влучання по місяцях за 12 місяців
 const months12 = []; { const d = new Date(npzAsOf + 'T00:00:00Z'); for (let k = 11; k >= 0; k--) months12.push(iso(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() - k, 1)).slice(0, 7)); }
 const byM = months12.map(m => strikes.filter(s => s.date.startsWith(m)).length), mxM = Math.max(...byM);
 const vizNpz = `<svg viewBox="0 0 ${W} ${H}" aria-hidden="true">${bars(byM, {
   colors: () => 'var(--fire)', labels: months12.map((m, i) => i % 3 === 0 || i === 11 ? MS[+m.slice(5) - 1] : ''),
   top: byM.map(n => n === mxM ? n : null), dashedLast: true })}</svg>`;
 
-// ґ) Набір у армію рф: січень–жовтень торік і цього року (оцінка Клюге, data/recruit.js)
+// г) Набір у армію рф: січень–жовтень торік і цього року (оцінка Клюге, data/recruit.js)
 const LOSS_RED = '#ff1f3d';
 const RC = window.RECRUIT_DATA, HAS_RC = RC?.cur === CUR && RC.kluge?.['y' + CUR];
 let vizRec = '', recLine = '';
@@ -394,9 +474,6 @@ if (HAS_RC) {
 }
 
 document.getElementById('cards').innerHTML = [
-  card({ href: 'war.html', tag: 'Ціна 1 км² для рф', num: { n: price26 }, unit: 'свинособак/км²',
-    badge: priceUp ? `${dec(price26 / price25)}× дорожче` : `${dec(price25 / price26)}× дешевше`, good: priceUp, viz: vizPrice,
-    line: (rank === 1 ? `${CUR}-й — <b>найдорожчий рік</b> війни для рф.` : `${CUR}-й — ${rank}-й за ціною рік війни.`) + ' Убиті й поранені разом.' }),
   HAS_OIL && card({ href: YEAR_HREF, tag: 'Нафтогазові доходи рф', num: { n: OG.value / OG.months, d: 2 }, unit: `трлн ₽ на місяць у ${CUR}`,
     badge: `${OG.changePct < 0 ? '−' : '+'}${Math.abs(OG.changePct)}% до торік`, good: OG.changePct < 0, viz: vizOil, key: keyOil,
     line: OG.planNew < OG.planOld ? `Мінфін рф урізав план на рік: ${dec(OG.planOld, 2)} → <b>${dec(OG.planNew, 2)}</b> трлн ₽.` : `За ${OG.period} ${CUR}-го — ${dec(OG.value, 2)} трлн ₽.` }),
@@ -461,7 +538,7 @@ const io = new IntersectionObserver(es => es.forEach(e => {
   if (!reduce) e.target.querySelectorAll('.count').forEach(countUp);
   io.unobserve(e.target);
 }), { threshold: .3 });
-document.querySelectorAll('.hero, .card').forEach(el => io.observe(el));
+document.querySelectorAll('.card').forEach(el => io.observe(el));
 })();
 </script>
 <script src="assets/nav.js"></script>
