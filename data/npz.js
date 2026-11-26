@@ -1,6 +1,6 @@
 // Дані сторінки «НПЗдець». Оновлюються скриптом scripts/update-npz.mjs і вручну.
 window.NPZ_DATA = {
- "asOf": "2026-11-25",
+ "asOf": "2026-11-26",
  "_comment": "Удари по НПЗ рф. Щодня доповнюється скриптом scripts/update-npz.mjs з переліку атак БпЛА у Вікіпедії (додає лише нові удари, нічого не видаляє). Вручну можна додати/виправити рядок у strikes (date, id заводу, note, src). match — регулярний вираз, за яким назва об'єкта у Вікіпедії зіставляється із заводом (null — не шукати). Потужність заводів — проектна, млн т нафти на рік, округлено (Reuters, сайти компаній).",
  "russiaCapacityMt": 340,
  "russiaCapacityNote": "≈930 тис. т на добу первинної переробки (Reuters, листопад 2026) ≈ 340 млн т на рік",
@@ -1955,6 +1955,18 @@ window.NPZ_DATA = {
    "id": "perm",
    "note": "дрони уразили Пермський нафтопереробний завод",
    "src": "https://militarnyi.com/uk/news/drony-atakuvaly-novoshahtynskyj-npz/"
+  },
+  {
+   "date": "2026-11-25",
+   "id": "kuibyshev",
+   "note": "українські дрони атакували Куйбишевський нафтопереробний завод",
+   "src": "https://militarnyi.com/uk/news/ukrayinski-drony-urazyly-syzranskyj-ta-kujbyshevskyj-npz-u-samarskij-oblasti-rf/"
+  },
+  {
+   "date": "2026-11-25",
+   "id": "syzran",
+   "note": "українські безпілотники успішно атакували Сизранський НПЗ }",
+   "src": "https://militarnyi.com/uk/news/ukrayinski-drony-urazyly-syzranskyj-ta-kujbyshevskyj-npz-u-samarskij-oblasti-rf/"
   }
  ]
 };
