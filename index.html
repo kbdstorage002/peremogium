@@ -380,17 +380,38 @@ if (EQ?.uav_systems?.length > 2) {
       <span class="track" style="--c:${C_CUR}" title="${dm(eqDay)}: ${sp(s.v)} · попередня доба: ${sp(s.y)} · середнє за 30 днів: ${sp(s.av)}">
         <i class="y" style="width:${(s.y / s.m * 100).toFixed(1)}%"></i><i style="width:${(s.v / s.m * 100).toFixed(1)}%;opacity:.85"></i><b style="left:${(s.av / s.m * 100).toFixed(1)}%"></b></span>
       <span class="v">${sp(s.v)}</span><span class="d ${s.v > s.y ? 'up' : s.v < s.y ? 'down' : 'flat'}">${signed(s.v - s.y)}</span>`).join('');
-  // Найсвіжіша кругла позначка: щойно перейдена — святкуємо; інакше — найближча
-  const ms = [...S, ...EQ_EXTRA.filter(([k]) => EQ[k]).map(st)].filter(s => EQ.totals?.[s.k])
+  // Підпис. Свято, якщо воно є (щойно перейдена кругла позначка або рекорд року).
+  // Інакше — один із добрих фактів; щодня інший (по черзі за номером дня), щоб підпис не повторювався.
+  const ALL = [...S, ...EQ_EXTRA.filter(([k]) => EQ[k]).map(st)];
+  const t0eq = Date.parse(EQ.start + 'T00:00:00Z'), idxOf = d => Math.round((Date.parse(d + 'T00:00:00Z') - t0eq) / 864e5);
+  const nEq = EQ.uav_systems.length, curFrom = idxOf(`${CUR}-01-01`), prevFrom = Math.max(0, idxOf(`${PREV}-01-01`)), lyIdx = idxOf(lyOf(eqDay));
+  const best = (arr, key) => arr.filter(Boolean).sort((a, b) => b[key] - a[key])[0];
+  const ms = ALL.filter(s => EQ.totals?.[s.k])
     .map(s => ({ ...s, ...milestone(EQ.totals[s.k], s.v, s.av, 10 ** Math.max(1, Math.floor(Math.log10(EQ.totals[s.k])) - 1)) }));
   const msHit = ms.find(x => x.crossed), msNext = [...ms].sort((a, b) => a.days - b.days)[0];
+  const daysInYear = nEq - 1 - curFrom;
+  const streaks = ALL.filter(s => s.av >= 1 && s.v > 0).map(s => ({ ...s, n: streak(s.a, (a, b) => a > b) }));
+  const record = daysInYear >= 14 && best(streaks.filter(s => s.n >= daysInYear), 'av');
+  const longest = best(streaks.filter(s => s.n >= 7), 'n');
+  const week = best(ALL.map(s => { const w1 = sum(s.a.slice(-7)), w0 = sum(s.a.slice(-14, -7)); return w0 > 0 && w1 >= 5 && w1 / w0 >= 1.15 && { ...s, w1, r: w1 / w0 }; }), 'r');
+  const ytd = curFrom > 0 && isFinite(lyIdx) && best(S.map(s => { const c = sum(s.a.slice(curFrom)), l = sum(s.a.slice(prevFrom, lyIdx + 1)); return l > 0 && c / l >= 1.1 && { ...s, c, r: c / l }; }), 'r');
+  const soonMs = msNext && !msNext.crossed && msNext.days <= 1.5 && msNext;
+  const good = [
+    longest && `${longest.name}: <b>${sp(longest.v)}</b> за добу — найбільше за ${days(longest.n)}.`,
+    week && `${week.name} за тиждень: <b>${sp(week.w1)}</b> — ${more(week.r)}, ніж тижнем раніше.`,
+    soonMs && `🎯 До <b>${sp(soonMs.next)}</b> знищених ${soonMs.gen} — лише ${sp(soonMs.left)}. Схоже, вже завтра.`,
+    ytd && `${ytd.name} з 1 січня: <b>${sp(ytd.c)}</b> — ${more(ytd.r)}, ніж за той самий період ${PREV}-го.`,
+  ].filter(Boolean);
+  const eqLine = msHit ? `🎉 Знищено вже <b>понад ${sp(msHit.crossed)} ${msHit.gen}</b> — цю позначку перейшли за останню добу.`
+    : record ? `🏆 ${record.name}: <b>${sp(record.v)} за добу — рекорд ${CUR} року</b>.`
+    : good.length ? good[Math.floor(Date.parse(eqDay) / 864e5) % good.length]
+    : msNext && isFinite(msNext.days) ? `До <b>${sp(msNext.next)}</b> знищених ${msNext.gen} — ще ${sp(msNext.left)}, ${soon(msNext.days)}.`
+    : `Цифри Генштабу ЗСУ; праворуч — різниця з попередньою добою.`;
   cardEq = todayCard({ tag: `Техніка рф · ${dm(eqDay)}`,
     num: sp(head.v), unit: head.name, delta: plaque(eqPlaque),
     viz: `<div class="eq">${rows}</div>`,
     key: `<div class="eq-key"><span><i style="background:${C_CUR}"></i>ця доба</span><span><i style="box-shadow:inset 0 0 0 1px ${C_CUR}"></i>попередня</span><span><i style="width:2px;background:var(--text-2)"></i>середнє за 30 днів</span></div>`,
-    line: msHit ? `🎉 Знищено вже <b>понад ${sp(msHit.crossed)} ${msHit.gen}</b> — цю позначку перейшли за останню добу.`
-      : msNext && isFinite(msNext.days) ? `До <b>${sp(msNext.next)}</b> знищених ${msNext.gen} — ще ${sp(msNext.left)}, ${soon(msNext.days)}.`
-      : `Цифри Генштабу ЗСУ; праворуч — різниця з попередньою добою.` });
+    line: eqLine });
 }
 
 // в) Ціна 1 км² за останні 4 тижні: втрати рф за ці дні ÷ захоплене за ними (DeepState). Щодня вікно зсувається.
@@ -403,14 +424,12 @@ if (L4?.gained > 0) {
   const pricePlaque = pick([
     ...yrs.map(r => ({ good: price4 > r.price, text: `${price4 >= r.price ? more(price4 / r.price).replace('більше', 'дорожче') : cmpTxt(price4, r.price).replace('менше', 'дешевше')}, ніж у ${r.yr}-му` })),
   ]);
-  const KYIV = 839, PITCH = 0.00714;                                           // площа Києва, км²; футбольне поле 105×68 м, км²
   const rows = [...warYears.map(r => ({ v: r.price, l: r.yr === CUR ? `${CUR}*` : String(r.yr), c: COL(r.yr) })), { v: price4, l: '4 тижні', c: C_CUR }];
   cardPrice = todayCard({ href: 'war.html', tag: `Ціна 1 км² · ${ddmm(L4.from)}–${ddmm(L4.to)}`,
     num: sp(price4), unit: 'свинособак за км²', delta: plaque(pricePlaque),
     viz: `<svg viewBox="0 0 ${W} ${H}" aria-hidden="true">${bars(rows.map(r => r.v), { colors: i => rows[i].c, labels: rows.map(r => r.l), top: rows.map(r => sp(r.v)), pad: 6, hl: rows.length - 1 })}</svg>`,
     key: `<div class="eq-key"><span>втрати (убиті й поранені) ÷ захоплене, по роках так само · * ${CUR} з 1 січня</span></div>`,
-    line: `За 4 тижні рф поклала <b>${sp(lossW)}</b> свинособак заради ${dec(L4.gained)} км² — це ${dec(L4.gained / KYIV * 100)}% площі Києва. `
-      + `Тобто ~<b>${dec(price4 * PITCH)}</b> на кожне футбольне поле.` });
+    line: `За 4 тижні рф поклала <b>${sp(lossW)}</b> свинособак заради ${dec(L4.gained)} км².` });
 }
 document.getElementById('today').innerHTML = cardLoss + cardEq + cardPrice;
 document.getElementById('todayAsOf').textContent = `Генштаб ЗСУ на ${dm(D.personnel.asOf)} · DeepState на ${dm(D.territory.asOf)}`;
@@ -474,18 +493,18 @@ if (HAS_RC) {
 }
 
 document.getElementById('cards').innerHTML = [
-  HAS_OIL && card({ href: YEAR_HREF, tag: 'Нафтогазові доходи рф', num: { n: OG.value / OG.months, d: 2 }, unit: `трлн ₽ на місяць у ${CUR}`,
-    badge: `${OG.changePct < 0 ? '−' : '+'}${Math.abs(OG.changePct)}% до торік`, good: OG.changePct < 0, viz: vizOil, key: keyOil,
-    line: OG.planNew < OG.planOld ? `Мінфін рф урізав план на рік: ${dec(OG.planOld, 2)} → <b>${dec(OG.planNew, 2)}</b> трлн ₽.` : `За ${OG.period} ${CUR}-го — ${dec(OG.value, 2)} трлн ₽.` }),
+  HAS_RC && card({ href: 'recruit.html', tag: 'срекрутинг', num: { n: RC.kluge['y' + CUR] }, unit: `контрактів за ${RC.kluge.period} ${CUR}`,
+    badge: `${Math.round((RC.kluge['y' + CUR] / RC.kluge['y' + (CUR - 1)] - 1) * 100)}% до торік`.replace('-', '−'), good: RC.kluge['y' + CUR] < RC.kluge['y' + (CUR - 1)], viz: vizRec,
+    key: `<div class="key"><span>${RC.kluge.period}: набір — оцінка за бюджетами регіонів рф (відкриті джерела), втрати — Генштаб ЗСУ</span></div>`, line: recLine }),
   card({ href: 'calendar.html', tag: 'Втрати рф з 1 січня', num: { n: p26 }, unit: 'осіб',
     badge: dayBadge, tone: dayUp ? 'good' : 'warn', viz: vizCal,
     line: `За останню добу — <b>${sp(last.v)}</b>. Найкращий для нас день за 10 тижнів — ${dm(maxCell.d)}, ${sp(maxCell.v)}.` }),
   card({ href: 'npz.html', tag: 'Удари по НПЗ рф', num: { n: s26.length }, unit: `влучань у ${CUR}`,
     badge: s25.length && s26.length > s25.length ? `${dec(s26.length / s25.length)}× більше` : '', viz: vizNpz,
     line: `${plants26} ${plural(plants26, ['завод', 'заводи', 'заводів'])} уражено цього року.` }),
-  HAS_RC && card({ href: 'recruit.html', tag: 'срекрутинг', num: { n: RC.kluge['y' + CUR] }, unit: `контрактів за ${RC.kluge.period} ${CUR}`,
-    badge: `${Math.round((RC.kluge['y' + CUR] / RC.kluge['y' + (CUR - 1)] - 1) * 100)}% до торік`.replace('-', '−'), good: RC.kluge['y' + CUR] < RC.kluge['y' + (CUR - 1)], viz: vizRec,
-    key: `<div class="key"><span>${RC.kluge.period}: набір — оцінка за бюджетами регіонів рф (відкриті джерела), втрати — Генштаб ЗСУ</span></div>`, line: recLine }),
+  HAS_OIL && card({ href: YEAR_HREF, tag: 'Нафтогазові доходи рф', num: { n: OG.value / OG.months, d: 2 }, unit: `трлн ₽ на місяць у ${CUR}`,
+    badge: `${OG.changePct < 0 ? '−' : '+'}${Math.abs(OG.changePct)}% до торік`, good: OG.changePct < 0, viz: vizOil, key: keyOil,
+    line: OG.planNew < OG.planOld ? `Мінфін рф урізав план на рік: ${dec(OG.planOld, 2)} → <b>${dec(OG.planNew, 2)}</b> трлн ₽.` : `За ${OG.period} ${CUR}-го — ${dec(OG.value, 2)} трлн ₽.` }),
 ].filter(Boolean).join('');
 
 // ================= 3. ЦИФРА ДНЯ =================

@@ -300,13 +300,13 @@ async function main() {
       lastWeek: territory.lastWeek,        // найсвіжіший тиждень: захоплено / звільнено окремо
       last4w: territory.last4w,            // останні 4 тижні: захоплено / звільнено окремо
     },
-    // Техніка рф за добу (останні 60 днів), та сама логіка днів, що й у personnel.daily
+    // Техніка рф за добу (з 1 січня минулого року), та сама логіка днів, що й у personnel.daily
     equipment: (() => {
       const out = {};
       for (const k of EQUIPMENT) {
-        const d = genStaffDaily(gsRecs, k, ymd(new Date(Date.parse(personnel.lastDate) - 61 * 864e5)));
-        out[k] = d.values.slice(-60);
-        out.start ??= ymd(new Date(Date.parse(d.start) + (d.values.length - out[k].length) * 864e5));
+        // З 1 січня минулого року: для рекордів року й порівняння з тим самим періодом торік
+        const d = genStaffDaily(gsRecs, k, `${THIS_YEAR - 1}-01-01`);
+        out[k] = d.values; out.start = d.start;
       }
       out.totals = Object.fromEntries(EQUIPMENT.map(k => [k, gsRecs[personnel.lastDate][k]]));   // накопичено з початку війни
       return out;
